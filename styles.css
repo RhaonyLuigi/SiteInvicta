@@ -1,0 +1,59 @@
+/* ============================================================
+   LIQUID GLASS NAV
+============================================================ */
+#site-header {
+    background: rgba(9, 9, 11, 0.0);
+    backdrop-filter: blur(0px);
+    -webkit-backdrop-filter: blur(0px);
+    transition: background 0.4s ease, backdrop-filter 0.4s ease;
+}
+
+#site-header.scrolled {
+    background: rgba(9, 9, 11, 0.75);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+    #site-header.scrolled {
+        background: rgb(9, 9, 11);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+}
+
+/* ============================================================
+   HIDE VIDEO NATIVE CONTROLS (belt-and-suspenders)
+============================================================ */
+video::-webkit-media-controls,
+video::-webkit-media-controls-enclosure,
+video::-webkit-media-controls-panel {
+    display: none !important;
+    -webkit-appearance: none;
+}
+
+/* ============================================================
+   CUSTOM SCROLLBAR — premium dark look
+============================================================ */
+::-webkit-scrollbar {
+    width: 4px;
+}
+::-webkit-scrollbar-track {
+    background: #09090b;
+}
+::-webkit-scrollbar-thumb {
+    background: #27272a;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #3f3f46;
+}
+
+/* ============================================================
+   SELECTION COLOR
+============================================================ */
+::selection {
+    background-color: #22c55e;
+    color: #000;
+}

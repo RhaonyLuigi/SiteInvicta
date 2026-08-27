@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invicta | A Maior da UCB</title>
+    <meta name="description" content="Compre ingressos para o maior evento da Atlética Invicta da Universidade Católica de Brasília.">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Invicta | A Maior da UCB">
+    <meta property="og:description" content="O evento mais aguardado do semestre. Garanta seu lugar.">
+    <meta property="og:image" content="hero-og.jpg">
+
+    <!-- Fonts: Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <!-- Tailwind CSS v4 via CDN -->
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+
+    <style type="text/tailwindcss">
+        @theme {
+            --color-invicta: #22c55e;
+            --color-invicta-dark: #16a34a;
+            --font-sans: 'Outfit', sans-serif;
+        }
+    </style>
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="bg-zinc-950 text-zinc-100 font-sans antialiased overflow-x-hidden">
+
+    <!-- ============================================================
+         NAVIGATION
+    ============================================================ -->
+    <header id="site-header" class="fixed top-0 w-full z-50 h-[64px] transition-all duration-300">
+        <div class="max-w-[480px] mx-auto px-5 h-full flex items-center justify-between">
+            <!-- Logo -->
+            <div class="flex items-center gap-2.5">
+                <i class="ph-fill ph-shield-chevron text-invicta text-2xl"></i>
+                <span class="font-black text-lg tracking-tight uppercase leading-none">Invicta</span>
+            </div>
+
+            <!-- CTA Nav -->
+            <a href="#ingressos" id="nav-cta"
+                class="bg-invicta text-black px-5 py-2 rounded-full text-sm font-bold transition-all duration-200 active:scale-95">
+                Ingressos
+            </a>
+        </div>
+    </header>
+
+    <main>
+
+        <!-- ============================================================
+             HERO — Scroll-Scrubbed Video (PINNED SECTION)
+        ============================================================ -->
+        <section id="hero-pin-wrapper" class="relative">
+            <!-- The sticky container — stays fixed in viewport while user scrolls -->
+            <div id="hero-sticky" class="sticky top-0 min-h-[100dvh] w-full overflow-hidden">
+
+                <!-- Video Element -->
+                <video
+                    id="hero-video"
+                    src="hero-scroll.mp4"
+                    muted
+                    playsinline
+                    preload="auto"
+                    class="absolute inset-0 w-full h-full object-cover object-center pointer-events-none"
+                    disablepictureinpicture
+                    x-webkit-airplay="deny"
+                ></video>
+
+                <!-- Dark gradient overlay (bottom) -->
+                <div class="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent z-10 pointer-events-none"></div>
+
+                <!-- Bottom Content Overlay -->
+                <div class="absolute bottom-0 left-0 right-0 z-20 px-5 pb-10 max-w-[480px] mx-auto">
+                    <span class="font-mono text-[10px] uppercase tracking-[0.22em] text-invicta block mb-3">Atlética Invicta · Biologia UCB</span>
+                    <h1 class="text-5xl font-black tracking-tighter leading-[1.0] mb-4">
+                        A MAIOR<br>DA UCB.
+                    </h1>
+                    <p class="text-zinc-300 text-base leading-relaxed mb-8 max-w-[28ch]">
+                        O evento mais aguardado do semestre. Garanta seu lugar.
+                    </p>
+                    <a href="#ingressos"
+                        class="inline-flex items-center gap-2 bg-invicta text-black px-8 py-4 rounded-full font-bold text-base active:scale-95 transition-transform duration-150">
+                        Garantir Lugar
+                        <i class="ph-bold ph-arrow-right"></i>
+                    </a>
+                </div>
+
+                <!-- Scroll Indicator — fades out as video progresses -->
+                <div id="scroll-hint" class="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-1 transition-opacity duration-500">
+                    <!-- intentionally no text — just a visual pulse line -->
+                    <div class="w-[1px] h-10 bg-white/30 animate-pulse"></div>
+                </div>
+            </div>
+
+            <!-- Scroll spacer: gives the page enough height for the scrub.
+                 JS will set this height dynamically based on video duration. -->
+            <div id="hero-scroll-spacer" style="height: 300vh;"></div>
+        </section>
+
+        <!-- ============================================================
+             EVENT DETAILS — Bento Grid
+        ============================================================ -->
+        <section id="o-evento" class="py-20 px-5 bg-zinc-950">
+            <div class="max-w-[480px] mx-auto">
+                <h2 class="text-3xl font-black tracking-tight mb-10 gs-reveal">Experiência<br>Absoluta.</h2>
+
+                <!-- Bento Grid — 5 cells, exactly 5 pieces of info -->
+                <div class="grid grid-cols-2 gap-3">
+
+                    <!-- Date (col-span-2) -->
+                    <div class="col-span-2 bg-zinc-900 border border-white/5 rounded-2xl p-6 flex flex-col gap-4 gs-reveal relative overflow-hidden">
+                        <div class="absolute -right-8 -top-8 w-40 h-40 bg-invicta/15 blur-3xl rounded-full pointer-events-none"></div>
+                        <i class="ph-fill ph-calendar-blank text-2xl text-zinc-500"></i>
+                        <div>
+                            <p class="text-2xl font-bold">12 de Novembro</p>
+                            <p class="text-zinc-400 text-sm mt-1">A partir das 22h</p>
+                        </div>
+                    </div>
+
+                    <!-- Location -->
+                    <div class="bg-white text-zinc-950 rounded-2xl p-5 flex flex-col justify-between gs-reveal" style="min-height:160px;">
+                        <i class="ph-fill ph-map-pin text-2xl text-zinc-400"></i>
+                        <div>
+                            <p class="font-bold text-base">Arena Hall</p>
+                            <p class="text-zinc-600 text-xs mt-0.5">SCS, Brasília</p>
+                        </div>
+                    </div>
+
+                    <!-- Open Bar -->
+                    <div class="bg-invicta rounded-2xl p-5 flex flex-col justify-between gs-reveal relative overflow-hidden" style="min-height:160px;">
+                        <i class="ph-fill ph-beer-bottle text-2xl text-white"></i>
+                        <div>
+                            <p class="font-bold text-base text-white">Open Bar</p>
+                            <p class="text-white/75 text-xs mt-0.5">100% a noite toda</p>
+                        </div>
+                    </div>
+
+                    <!-- Image tile -->
+                    <div class="col-span-2 rounded-2xl overflow-hidden relative gs-reveal" style="height:220px;">
+                        <img src="https://picsum.photos/seed/dj-stage-night/800/500" alt="Palco principal iluminado" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-5">
+                            <span class="font-bold text-white">Palco Principal</span>
+                        </div>
+                    </div>
+
+                    <!-- Lineup -->
+                    <div class="col-span-2 bg-zinc-900 border border-white/5 rounded-2xl p-6 flex flex-col gap-4 gs-reveal">
+                        <i class="ph-fill ph-music-notes text-2xl text-zinc-500"></i>
+                        <div>
+                            <p class="text-xl font-bold">Lineup Secreto</p>
+                            <p class="text-zinc-400 text-sm mt-1">Grandes nomes revelados em breve. Fique ligado.</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================
+             INGRESSOS
+        ============================================================ -->
+        <section id="ingressos" class="py-20 px-5 bg-zinc-950 border-t border-white/5 relative">
+            <div class="absolute left-1/2 top-0 -translate-x-1/2 w-80 h-80 bg-invicta/5 blur-[100px] rounded-full pointer-events-none"></div>
+
+            <div class="max-w-[480px] mx-auto">
+                <h2 class="text-3xl font-black tracking-tight mb-2 gs-reveal">Garanta<br>seu acesso.</h2>
+                <p class="text-zinc-400 text-sm mb-10 gs-reveal">Ingressos limitados. Não fique de fora.</p>
+
+                <!-- Lote Aluno -->
+                <div class="bg-zinc-900 border border-white/10 rounded-3xl p-7 mb-4 gs-reveal">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <p class="text-xs font-mono uppercase tracking-widest text-zinc-500 mb-1">1° Lote</p>
+                            <p class="text-xl font-bold">Aluno UCB</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-4xl font-black">R$ 50</p>
+                        </div>
+                    </div>
+                    <ul class="space-y-3 mb-7 text-sm text-zinc-300">
+                        <li class="flex items-center gap-2.5"><i class="ph-fill ph-check-circle text-invicta text-lg flex-shrink-0"></i> Acesso Pista Premium</li>
+                        <li class="flex items-center gap-2.5"><i class="ph-fill ph-check-circle text-invicta text-lg flex-shrink-0"></i> Open Bar Universitário</li>
+                        <li class="flex items-center gap-2.5"><i class="ph-fill ph-check-circle text-invicta text-lg flex-shrink-0"></i> Copo Exclusivo Invicta</li>
+                    </ul>
+                    <button class="w-full py-4 rounded-full bg-white text-black font-bold text-base active:scale-95 transition-transform duration-150">
+                        Comprar — Aluno UCB
+                    </button>
+                </div>
+
+                <!-- Lote Geral -->
+                <div class="bg-zinc-900 border border-invicta/40 rounded-3xl p-7 relative overflow-hidden gs-reveal">
+                    <div class="absolute top-0 left-0 right-0 h-0.5 bg-invicta"></div>
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <p class="text-xs font-mono uppercase tracking-widest text-zinc-500 mb-1">1° Lote</p>
+                            <p class="text-xl font-bold">Público Geral</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-4xl font-black">R$ 80</p>
+                        </div>
+                    </div>
+                    <ul class="space-y-3 mb-7 text-sm text-zinc-300">
+                        <li class="flex items-center gap-2.5"><i class="ph-fill ph-check-circle text-invicta text-lg flex-shrink-0"></i> Acesso Pista Premium</li>
+                        <li class="flex items-center gap-2.5"><i class="ph-fill ph-check-circle text-invicta text-lg flex-shrink-0"></i> Open Bar Completo</li>
+                    </ul>
+                    <button class="w-full py-4 rounded-full bg-invicta text-black font-bold text-base active:scale-95 transition-transform duration-150">
+                        Comprar — Público Geral
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============================================================
+         FOOTER
+    ============================================================ -->
+    <footer class="border-t border-white/5 py-10 px-5">
+        <div class="max-w-[480px] mx-auto">
+            <div class="flex items-center gap-2 mb-6">
+                <i class="ph-fill ph-shield-chevron text-invicta text-xl"></i>
+                <span class="font-black uppercase tracking-tight text-sm">Atlética Invicta</span>
+            </div>
+            <div class="flex gap-5 text-zinc-500 text-sm mb-6">
+                <a href="#" class="hover:text-white transition-colors">Instagram</a>
+                <a href="#" class="hover:text-white transition-colors">Termos</a>
+                <a href="#" class="hover:text-white transition-colors">Reembolso</a>
+            </div>
+            <p class="text-zinc-600 text-xs">Biologia UCB · Atlética Invicta · Brasília, DF</p>
+        </div>
+    </footer>
+
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

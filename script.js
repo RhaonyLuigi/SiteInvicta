@@ -1,0 +1,115 @@
+/* ============================================================
+   script.js — Atlética Invicta
+   Video Scroll-Scrub via GSAP ScrollTrigger + Reveal Animations
+============================================================ */
+
+document.addEventListener("DOMContentLoaded", () => {
+    gsap.registerPlugin(ScrollTrigger);
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // ----------------------------------------------------------
+    // 1. NAV HEADER: glass effect on scroll
+    // ----------------------------------------------------------
+    const header = document.getElementById("site-header");
+    ScrollTrigger.create({
+        start: "top -10",
+        onEnter: () => header.classList.add("scrolled"),
+        onLeaveBack: () => header.classList.remove("scrolled"),
+    });
+
+    // ----------------------------------------------------------
+    // 2. VIDEO SCROLL SCRUB
+    //    The section is made tall (spacer). The inner div is
+    //    sticky. GSAP scrubs video.currentTime via ScrollTrigger.
+    // ----------------------------------------------------------
+    const video = document.getElementById("hero-video");
+    const wrapper = document.getElementById("hero-pin-wrapper");
+    const spacer = document.getElementById("hero-scroll-spacer");
+    const scrollHint = document.getElementById("scroll-hint");
+
+    if (video) {
+        // Wait for video metadata so we know duration
+        function initVideoScrub() {
+            if (!video.duration || isNaN(video.duration)) return;
+
+            const duration = video.duration; // seconds
+
+            // Set spacer height: we give 90px of scroll per second of video
+            // plus 100vh for the sticky section itself.
+            const pxPerSecond = 100; // tune this to feel right
+            spacer.style.height = `${duration * pxPerSecond}px`;
+
+            // Create a progress object GSAP can tween
+            const state = { t: 0 };
+
+            // Make the video seek to t=0 immediately (no autoplay)
+            video.pause();
+            video.currentTime = 0;
+
+            // Fade scroll hint out once user starts scrolling
+            ScrollTrigger.create({
+                trigger: wrapper,
+                start: "top top",
+                end: `+=${duration * pxPerSecond * 0.1}`,
+                onUpdate: (self) => {
+                    if (scrollHint) scrollHint.style.opacity = 1 - self.progress;
+                },
+            });
+
+            // Main scrub: tween state.t from 0 → duration
+            // Use "scrub: true" (no smoothing) for frame-perfect seek
+            gsap.to(state, {
+                t: duration,
+                ease: "none",
+                onUpdate: () => {
+                    // Clamp to avoid seeking past end
+                    const target = Math.min(Math.max(state.t, 0), duration - 0.001);
+                    // Only seek if difference is significant (avoids jank from tiny seeks)
+                    if (Math.abs(video.currentTime - target) > 0.015) {
+                        video.currentTime = target;
+                    }
+                },
+                scrollTrigger: {
+                    trigger: wrapper,
+                    start: "top top",         // pin starts when section top hits viewport top
+                    end: () => `+=${duration * pxPerSecond}`, // scroll distance = video duration * px rate
+                    scrub: 0,                 // 0 = instant, no lag. More lag = heavier smoothing
+                    invalidateOnRefresh: true,
+                },
+            });
+        }
+
+        // Try when metadata available, or immediately if already loaded
+        if (video.readyState >= 1) {
+            initVideoScrub();
+        } else {
+            video.addEventListener("loadedmetadata", initVideoScrub, { once: true });
+        }
+    }
+
+    // ----------------------------------------------------------
+    // 3. SCROLL REVEAL for content sections
+    // ----------------------------------------------------------
+    if (!reduceMotion) {
+        const revealEls = gsap.utils.toArray(".gs-reveal");
+
+        revealEls.forEach((el) => {
+            gsap.fromTo(
+                el,
+                { opacity: 0, y: 28 },
+                {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.75,
+                    ease: "power3.out",
+                    scrollTrigger: {
+                        trigger: el,
+                        start: "top 88%",
+                        toggleActions: "play none none none",
+                    },
+                }
+            );
+        });
+    }
+});
