@@ -69,6 +69,18 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (Math.abs(video.currentTime - target) > 0.015) {
                         video.currentTime = target;
                     }
+
+                    // Fade to black: starts at 70% progress, fully black at 100%
+                    const progress = target / duration;
+                    const fadeStart = 0.70; // start fading at 70% of video
+                    const overlay = document.getElementById("hero-end-overlay");
+                    if (overlay) {
+                        if (progress >= fadeStart) {
+                            overlay.style.opacity = (progress - fadeStart) / (1 - fadeStart);
+                        } else {
+                            overlay.style.opacity = 0;
+                        }
+                    }
                 },
                 scrollTrigger: {
                     trigger: wrapper,
