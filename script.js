@@ -57,21 +57,31 @@ document.addEventListener("DOMContentLoaded", () => {
                 },
             });
 
+            let targetTime = 0;
+            let isUpdatingVideo = false;
+
+            function updateVideoTime() {
+                if (Math.abs(video.currentTime - targetTime) > 0.015) {
+                    video.currentTime = targetTime;
+                }
+                isUpdatingVideo = false;
+            }
+
             // Main scrub: tween state.t from 0 → duration
-            // Use "scrub: true" (no smoothing) for frame-perfect seek
             gsap.to(state, {
                 t: duration,
                 ease: "none",
                 onUpdate: () => {
                     // Clamp to avoid seeking past end
-                    const target = Math.min(Math.max(state.t, 0), duration - 0.001);
-                    // Only seek if difference is significant (avoids jank from tiny seeks)
-                    if (Math.abs(video.currentTime - target) > 0.015) {
-                        video.currentTime = target;
+                    targetTime = Math.min(Math.max(state.t, 0), duration - 0.001);
+                    
+                    if (!isUpdatingVideo) {
+                        isUpdatingVideo = true;
+                        requestAnimationFrame(updateVideoTime);
                     }
 
                     // Fade to black: starts at 70% progress, fully black at 100%
-                    const progress = target / duration;
+                    const progress = targetTime / duration;
                     const fadeStart = 0.70; // start fading at 70% of video
                     const overlay = document.getElementById("hero-end-overlay");
                     if (overlay) {
@@ -86,7 +96,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     trigger: wrapper,
                     start: "top top",         // pin starts when section top hits viewport top
                     end: () => `+=${duration * pxPerSecond}`, // scroll distance = video duration * px rate
-                    scrub: 0,                 // 0 = instant, no lag. More lag = heavier smoothing
+                    scrub: 0.5,               // Smooth out the scrubbing to avoid jitter
                     invalidateOnRefresh: true,
                 },
             });
