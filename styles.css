@@ -39,13 +39,16 @@ video::-webkit-media-controls-panel {
 ::-webkit-scrollbar {
     width: 4px;
 }
+
 ::-webkit-scrollbar-track {
     background: #09090b;
 }
+
 ::-webkit-scrollbar-thumb {
     background: #27272a;
     border-radius: 4px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
     background: #3f3f46;
 }
@@ -56,4 +59,58 @@ video::-webkit-media-controls-panel {
 ::selection {
     background-color: #22c55e;
     color: #000;
+}
+
+/* Container principal */
+.video-container {
+    position: relative;
+    /* Necessário para posicionar o botão dentro dele */
+    display: inline-block;
+    height: 80%;
+    width: 28rem;
+    max-width: 720px;
+    border-radius: 30px;
+    /* Ajuste a largura máxima do seu container */
+    overflow: hidden;
+    cursor: pointer;
+}
+
+/* Garante que o vídeo cubra o container */
+.video-container video {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+/* Botão estilizado por cima do vídeo */
+.btn-compre {
+    position: absolute;
+    bottom: 8px;
+    /* Distância do fundo do vídeo */
+    left: 50%;
+    transform: translateX(-50%);
+    /* Centraliza o botão horizontalmente */
+
+    /* Estilização do botão */
+    background-color: #059919;
+    /* Cor de fundo (ex: vermelho) */
+    color: #ffffff;
+    /* Cor do texto */
+    padding: 10px 10px;
+    font-family: sans-serif;
+    font-weight: bold;
+    font-size: 8px;
+    text-transform: uppercase;
+    border-radius: 15px;
+    /* Bordas arredondadas */
+    box-shadow: 0 4px 5px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+/* Efeito de hover (passar o mouse) */
+.video-container:hover .btn-compre {
+    background-color: #016e0a;
+    /* Muda a cor do botão */
+    transform: translateX(-50%) scale(1.05);
+    /* Aumenta levemente de tamanho */
 }
