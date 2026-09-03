@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Validador | Invicta</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <style type="text/tailwindcss">
+        @theme {
+            --color-invicta: #22c55e;
+            --font-sans: 'Outfit', sans-serif;
+        }
+    </style>
+    <style>
+        /* Scanner animation */
+        @keyframes scan {
+            0% { top: 0%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+        .scanner-line {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: #22c55e;
+            box-shadow: 0 0 10px #22c55e, 0 0 20px #22c55e;
+            animation: scan 2s linear infinite;
+        }
+        .corner-border {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border-color: #ffffff;
+            border-style: solid;
+            transition: border-color 0.3s;
+        }
+        .scanning .corner-border { border-color: #22c55e; }
+        .corner-tl { top: -2px; left: -2px; border-width: 4px 0 0 4px; border-top-left-radius: 12px; }
+        .corner-tr { top: -2px; right: -2px; border-width: 4px 4px 0 0; border-top-right-radius: 12px; }
+        .corner-bl { bottom: -2px; left: -2px; border-width: 0 0 4px 4px; border-bottom-left-radius: 12px; }
+        .corner-br { bottom: -2px; right: -2px; border-width: 0 4px 4px 0; border-bottom-right-radius: 12px; }
+
+        /* Full screen states */
+        .state-panel {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .state-panel.active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 font-sans antialiased overflow-hidden h-[100dvh] flex flex-col items-center justify-center relative">
+
+    <div class="w-full max-w-[480px] h-full flex flex-col relative bg-zinc-950">
+        
+        <!-- Header -->
+        <header class="p-5 flex items-center justify-between border-b border-white/5 z-10 bg-zinc-950/80 backdrop-blur-md">
+            <div class="flex items-center gap-2">
+                <i class="ph-fill ph-shield-chevron text-invicta text-2xl"></i>
+                <span class="font-black text-lg tracking-tight uppercase leading-none">Validador</span>
+            </div>
+            <div class="bg-zinc-900 px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-invicta animate-pulse"></div>
+                <span class="text-xs font-bold text-zinc-400">Online</span>
+            </div>
+        </header>
+
+        <!-- Scanner View -->
+        <main class="flex-1 flex flex-col items-center justify-center p-6 relative z-0">
+            <div class="text-center mb-8">
+                <h1 class="text-2xl font-black mb-2">Escanear Ingresso</h1>
+                <p class="text-zinc-400 text-sm">Aponte a câmera para o QR Code</p>
+            </div>
+
+            <!-- Camera Viewfinder Simulator -->
+            <div id="scanner-box" class="w-64 h-64 bg-zinc-900/50 rounded-xl relative mb-12 scanning shadow-[0_0_50px_rgba(34,197,94,0.1)]">
+                <!-- Decorative Corners -->
+                <div class="corner-border corner-tl"></div>
+                <div class="corner-border corner-tr"></div>
+                <div class="corner-border corner-bl"></div>
+                <div class="corner-border corner-br"></div>
+                
+                <!-- Scanner Line -->
+                <div class="scanner-line"></div>
+
+                <!-- Fake Camera background -->
+                <div class="absolute inset-0 flex items-center justify-center opacity-20">
+                    <i class="ph-bold ph-qr-code text-8xl"></i>
+                </div>
+            </div>
+
+            <!-- Manual Entry -->
+            <div class="w-full max-w-sm">
+                <p class="text-center text-zinc-500 text-xs font-bold uppercase tracking-wider mb-4">Ou digite o código</p>
+                <div class="flex gap-2">
+                    <input type="text" id="ticket-input" placeholder="INV-0000" class="flex-1 bg-black border border-white/10 rounded-2xl px-5 py-4 text-white text-center font-mono font-bold text-lg placeholder-zinc-700 focus:outline-none focus:border-invicta focus:ring-1 focus:ring-invicta transition-all" autocomplete="off" autocorrect="off">
+                </div>
+                <button onclick="validateTicket()" class="w-full bg-white text-black font-black py-4 rounded-2xl mt-3 active:scale-95 transition-transform text-lg shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+                    Validar Ingresso
+                </button>
+            </div>
+            
+            <!-- Hint for demo -->
+            <p class="text-zinc-600 text-xs text-center mt-6">Dica: Digite "1" para sucesso, "2" para já utilizado, ou qualquer outra coisa para erro.</p>
+        </main>
+
+        <!-- STATE PANELS -->
+
+        <!-- Success Panel -->
+        <div id="panel-success" class="state-panel bg-green-500 text-black">
+            <div class="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6 shadow-2xl">
+                <i class="ph-bold ph-check text-6xl text-green-500"></i>
+            </div>
+            <h1 class="text-4xl font-black tracking-tight mb-2 text-center">ACESSO<br>PERMITIDO</h1>
+            
+            <div class="bg-black/10 rounded-3xl p-6 w-full max-w-sm mt-8 space-y-4">
+                <div>
+                    <p class="text-black/60 text-xs font-bold uppercase tracking-wider mb-1">Nome Completo</p>
+                    <p class="font-bold text-xl">João Pedro da Silva</p>
+                </div>
+                <div>
+                    <p class="text-black/60 text-xs font-bold uppercase tracking-wider mb-1">RA / Matrícula</p>
+                    <p class="font-bold text-xl">UCB-20230101</p>
+                </div>
+                <div class="pt-4 border-t border-black/10">
+                    <p class="text-black/60 text-xs font-bold uppercase tracking-wider mb-1">Tipo de Ingresso</p>
+                    <span class="inline-block bg-black text-white px-4 py-2 rounded-lg font-bold text-lg">
+                        1º Lote Aluno
+                    </span>
+                </div>
+            </div>
+
+            <button onclick="resetScanner()" class="absolute bottom-8 left-6 right-6 bg-black text-white font-black py-5 rounded-2xl active:scale-95 transition-transform text-xl flex items-center justify-center gap-2">
+                <i class="ph-bold ph-scan"></i> Próximo Ingresso
+            </button>
+        </div>
+
+        <!-- Error Panel -->
+        <div id="panel-error" class="state-panel bg-red-600 text-white">
+            <div class="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6 shadow-2xl">
+                <i class="ph-bold ph-x text-6xl text-red-600"></i>
+            </div>
+            <h1 id="error-title" class="text-4xl font-black tracking-tight mb-2 text-center leading-[1.1]">ACESSO<br>NEGADO</h1>
+            <p id="error-subtitle" class="text-white/80 font-medium text-center text-lg mt-2">Ingresso Inválido ou não encontrado.</p>
+            
+            <div id="error-details" class="bg-black/20 rounded-3xl p-6 w-full max-w-sm mt-8 hidden border border-black/10">
+                <p class="text-white/80 text-xs uppercase tracking-wider font-bold mb-1">Ingresso validado em:</p>
+                <p class="font-black text-2xl text-white drop-shadow-md">12/11 às 22:15</p>
+            </div>
+
+            <button onclick="resetScanner()" class="absolute bottom-8 left-6 right-6 bg-white text-black font-black py-5 rounded-2xl active:scale-95 transition-transform text-xl flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,255,255,0.2)]">
+                <i class="ph-bold ph-arrow-counter-clockwise"></i> Tentar Novamente
+            </button>
+        </div>
+
+    </div>
+
+    <!-- Script for interaction -->
+    <script>
+        const input = document.getElementById('ticket-input');
+        const panelSuccess = document.getElementById('panel-success');
+        const panelError = document.getElementById('panel-error');
+        const errorTitle = document.getElementById('error-title');
+        const errorSubtitle = document.getElementById('error-subtitle');
+        const errorDetails = document.getElementById('error-details');
+
+        function validateTicket() {
+            const val = input.value.trim().toUpperCase();
+            
+            if(!val) return;
+
+            // Remove keyboard on mobile
+            input.blur();
+
+            // Simple mock logic for demonstration
+            if(val === '1' || val === 'INV-001') {
+                // Success
+                panelSuccess.classList.add('active');
+            } else if (val === '2' || val === 'INV-002') {
+                // Error: Already used
+                errorTitle.innerHTML = 'INGRESSO JÁ<br>UTILIZADO';
+                errorSubtitle.innerText = 'Este ingresso não pode ser usado novamente.';
+                errorDetails.classList.remove('hidden');
+                panelError.classList.add('active');
+            } else {
+                // Error: Not found / Invalid
+                errorTitle.innerHTML = 'ACESSO<br>NEGADO';
+                errorSubtitle.innerText = 'Ingresso inválido ou não encontrado no sistema.';
+                errorDetails.classList.add('hidden');
+                panelError.classList.add('active');
+            }
+        }
+
+        function resetScanner() {
+            panelSuccess.classList.remove('active');
+            panelError.classList.remove('active');
+            input.value = '';
+            input.focus();
+        }
+
+        // Allow pressing Enter to validate
+        input.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                validateTicket();
+            }
+        });
+    </script>
+</body>
+</html>
