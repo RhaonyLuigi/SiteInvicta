@@ -1,377 +1,88 @@
-<!DOCTYPE html>
-<html lang="pt-BR" class="dark scroll-smooth">
-
+<!doctype html>
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel Administrativo | Invicta</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap"
-        rel="stylesheet">
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
-    <style type="text/tailwindcss">
-        @theme {
-            --color-invicta: #22c55e;
-            --color-invicta-dark: #16a34a;
-            --font-sans: 'Outfit', sans-serif;
-        }
-    </style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Invicta | Painel de demonstração</title>
     <link rel="stylesheet" href="styles.css">
+    <script type="module" src="admin.js"></script>
 </head>
-
-<body class="bg-zinc-950 text-zinc-100 font-sans antialiased overflow-x-hidden flex h-screen">
-
-    <!-- Sidebar -->
-    <aside class="w-64 bg-zinc-900 border-r border-white/5 hidden md:flex flex-col h-full shrink-0 relative z-20">
-        <div class="p-6 flex items-center gap-2.5 mb-8">
-            <i class="ph-fill ph-shield-chevron text-invicta text-2xl"></i>
-            <span class="font-black text-lg tracking-tight uppercase leading-none">Invicta Admin</span>
+<body>
+    <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+    <header class="site-header">
+        <div class="wrap topbar">
+            <a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true">I</span> INVICTA</a>
+            <a class="button button-secondary button-small" href="index.html">Voltar ao site</a>
         </div>
-        <nav class="flex-1 px-4 space-y-2">
-            <a href="#"
-                class="flex items-center gap-3 px-3 py-3 rounded-xl bg-invicta/10 text-invicta font-bold transition-colors">
-                <i class="ph-fill ph-squares-four text-xl"></i>
-                Dashboard
-            </a>
-            <a href="#"
-                class="flex items-center gap-3 px-3 py-3 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 font-medium transition-colors">
-                <i class="ph-bold ph-calendar-star text-xl"></i>
-                Eventos
-            </a>
-            <a href="#"
-                class="flex items-center gap-3 px-3 py-3 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 font-medium transition-colors">
-                <i class="ph-bold ph-ticket text-xl"></i>
-                Lotes
-            </a>
-            <a href="#"
-                class="flex items-center gap-3 px-3 py-3 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 font-medium transition-colors">
-                <i class="ph-bold ph-users text-xl"></i>
-                Participantes
-            </a>
-        </nav>
-        <div class="p-4 border-t border-white/5">
-            <a href="index.html"
-                class="flex items-center gap-3 px-3 py-3 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 font-medium transition-colors">
-                <i class="ph-bold ph-sign-out text-xl"></i>
-                Sair
-            </a>
+    </header>
+    <main id="conteudo" class="wrap section">
+        <p class="eyebrow">Demonstração interna</p>
+        <h1>Painel de eventos</h1>
+        <p class="muted">Gerencie eventos e lotes de teste. Os dados ficam neste navegador.</p>
+        <noscript><p class="notice">Ative o JavaScript para usar o painel de demonstração.</p></noscript>
+        <p id="admin-status" class="notice" role="status"></p>
+        <dl class="stats">
+            <div class="card"><dt>Receita simulada</dt><dd id="revenue">R$ 0,00</dd></div>
+            <div class="card"><dt>Ingressos emitidos</dt><dd id="sales">0</dd></div>
+            <div class="card"><dt>Entradas registradas</dt><dd id="entries">0</dd></div>
+        </dl>
+        <div class="admin-forms">
+            <form id="event-form" class="card stack">
+                <h2>Criar evento</h2>
+                <label for="event-name">Nome</label>
+                <input id="event-name" name="name" required maxlength="80">
+                <label for="starts-at">Data e hora local do evento</label>
+                <input id="starts-at" name="date" type="datetime-local" required>
+                <label for="place">Local</label>
+                <input id="place" name="place" required maxlength="100">
+                <label for="event-description">Descrição</label>
+                <textarea id="event-description" name="description" rows="2" maxlength="220"></textarea>
+                <button class="button" type="submit">Salvar evento de teste</button>
+            </form>
+            <form id="lot-form" class="card stack">
+                <h2>Adicionar lote</h2>
+                <label for="event-select">Evento</label>
+                <select id="event-select" name="eventId" required></select>
+                <label for="lot-name">Nome do lote</label>
+                <input id="lot-name" name="name" placeholder="Ex. 1º lote" required maxlength="40">
+                <label for="category">Categoria</label>
+                <input id="category" name="category" placeholder="Ex. Público Geral" required maxlength="60">
+                <div class="form-grid">
+                    <div class="stack">
+                        <label for="price">Preço em reais</label>
+                        <input id="price" name="price" type="number" inputmode="decimal" min="0.01" max="100000" step="0.01" required>
+                    </div>
+                    <div class="stack">
+                        <label for="capacity">Quantidade</label>
+                        <input id="capacity" name="capacity" type="number" min="1" max="100000" step="1" required>
+                    </div>
+                </div>
+                <label for="lot-description">O que está incluído</label>
+                <textarea id="lot-description" name="description" rows="2" maxlength="180"></textarea>
+                <button class="button" type="submit">Salvar lote de teste</button>
+            </form>
         </div>
-    </aside>
 
-    <!-- Main Content -->
-    <main class="flex-1 flex flex-col h-full overflow-y-auto relative">
-        <!-- Top header mobile -->
-        <header
-            class="md:hidden flex items-center justify-between p-5 border-b border-white/5 bg-zinc-900 sticky top-0 z-30">
-            <div class="flex items-center gap-2.5">
-                <i class="ph-fill ph-shield-chevron text-invicta text-xl"></i>
-                <span class="font-black text-base tracking-tight uppercase leading-none">Admin</span>
-            </div>
-            <button class="p-2 bg-white/5 rounded-lg active:scale-95 transition-transform"><i
-                    class="ph-bold ph-list text-xl"></i></button>
-        </header>
-
-        <div class="p-6 md:p-10 max-w-7xl mx-auto w-full space-y-8">
-
-            <!-- Welcome -->
-            <div>
-                <h1 class="text-3xl font-black tracking-tight">Visão Geral</h1>
-                <p class="text-zinc-400 mt-1">Acompanhe as vendas e gerencie seus eventos.</p>
-            </div>
-
-            <!-- Metrics -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-                <div class="bg-zinc-900 border border-white/5 rounded-2xl p-6 relative overflow-hidden">
-                    <div
-                        class="absolute -right-6 -top-6 w-32 h-32 bg-invicta/10 blur-2xl rounded-full pointer-events-none">
+        <section class="section" aria-labelledby="catalog-title">
+            <p class="eyebrow">Catálogo</p>
+            <h2 id="catalog-title">Eventos e lotes</h2>
+            <div id="admin-events" class="stack event-list"></div>
+            <template id="event-row">
+                <article class="card">
+                    <div class="row-heading">
+                        <div><h3></h3><p class="muted" data-event-meta></p></div>
+                        <a class="button button-secondary button-small">Ver página do evento</a>
                     </div>
-                    <div class="flex items-center gap-4 mb-4">
-                        <div class="w-12 h-12 rounded-full bg-invicta/10 flex items-center justify-center">
-                            <i class="ph-fill ph-currency-circle-dollar text-2xl text-invicta"></i>
-                        </div>
-                        <p class="text-zinc-400 font-medium">Total Arrecadado</p>
-                    </div>
-                    <h2 class="text-4xl font-black">R$ 25.400</h2>
-                    <p class="text-sm text-invicta mt-2 font-bold flex items-center gap-1"><i
-                            class="ph-bold ph-trend-up"></i> +12% esta semana</p>
-                </div>
-
-                <div class="bg-zinc-900 border border-white/5 rounded-2xl p-6 relative overflow-hidden">
-                    <div class="flex items-center gap-4 mb-4">
-                        <div class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center">
-                            <i class="ph-fill ph-ticket text-2xl text-zinc-300"></i>
-                        </div>
-                        <p class="text-zinc-400 font-medium">Ingressos Vendidos</p>
-                    </div>
-                    <h2 class="text-4xl font-black">450 <span class="text-xl text-zinc-600 font-medium">/ 600</span>
-                    </h2>
-
-                    <div class="w-full bg-black rounded-full h-2 mt-4 overflow-hidden border border-white/5">
-                        <div class="bg-invicta h-2 rounded-full relative overflow-hidden" style="width: 75%">
-                            <div class="absolute inset-0 bg-white/20 w-full animate-[pulse_2s_ease-in-out_infinite]">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div
-                    class="bg-zinc-900 border border-white/5 rounded-2xl p-6 relative overflow-hidden flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center gap-4 mb-4">
-                            <div class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center">
-                                <i class="ph-fill ph-calendar-star text-2xl text-zinc-300"></i>
-                            </div>
-                            <p class="text-zinc-400 font-medium">Próximo Evento</p>
-                        </div>
-                        <h2 class="text-xl font-bold truncate">A Maior da UCB</h2>
-                        <p class="text-sm text-zinc-400 mt-1">12 de Novembro, Arena Hall</p>
-                    </div>
-                    <div class="mt-4 flex gap-3 text-center">
-                        <div class="bg-black rounded-lg px-3 py-2 flex-1 border border-white/5">
-                            <span class="block text-xl font-black text-invicta">14</span>
-                            <span class="block text-[10px] text-zinc-500 uppercase tracking-wider">Dias</span>
-                        </div>
-                        <div class="bg-black rounded-lg px-3 py-2 flex-1 border border-white/5">
-                            <span class="block text-xl font-black text-invicta">08</span>
-                            <span class="block text-[10px] text-zinc-500 uppercase tracking-wider">Hrs</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Main Grid -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-10">
-
-                <!-- Form -->
-                <div class="lg:col-span-1 space-y-6">
-                    <div class="bg-zinc-900 border border-white/5 rounded-3xl p-6 lg:p-8 relative">
-                        <!-- Subtle gradient top border -->
-                        <div
-                            class="absolute top-0 left-8 right-8 h-[1px] bg-gradient-to-r from-transparent via-invicta/30 to-transparent">
-                        </div>
-
-                        <h3 class="text-xl font-bold mb-6 flex items-center gap-2"><i
-                                class="ph-bold ph-plus-circle text-invicta"></i> Novo Evento / Lote</h3>
-
-                        <form class="space-y-4">
-                            <div>
-                                <label class="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Nome
-                                    do Evento/Lote</label>
-                                <input type="text" placeholder="Ex: 2º Lote - Geral"
-                                    class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-invicta focus:ring-1 focus:ring-invicta transition-all">
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label
-                                        class="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Data</label>
-                                    <input type="date"
-                                        class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-invicta focus:ring-1 focus:ring-invicta transition-all"
-                                        style="color-scheme: dark;">
-                                </div>
-                                <div>
-                                    <label
-                                        class="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Horário</label>
-                                    <input type="time"
-                                        class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-invicta focus:ring-1 focus:ring-invicta transition-all"
-                                        style="color-scheme: dark;">
-                                </div>
-                            </div>
-
-                            <div>
-                                <label
-                                    class="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Local</label>
-                                <input type="text" placeholder="Arena Hall..."
-                                    class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-invicta focus:ring-1 focus:ring-invicta transition-all">
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label
-                                        class="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Capacidade</label>
-                                    <input type="number" placeholder="Ex: 200"
-                                        class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-invicta focus:ring-1 focus:ring-invicta transition-all">
-                                </div>
-                                <div>
-                                    <label
-                                        class="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Preço
-                                        (R$)</label>
-                                    <input type="text" placeholder="50,00"
-                                        class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-invicta focus:ring-1 focus:ring-invicta transition-all">
-                                </div>
-                            </div>
-
-                            <div>
-                                <label
-                                    class="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Descrição
-                                    Curta</label>
-                                <textarea rows="2" placeholder="Open bar, pista premium..."
-                                    class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-invicta focus:ring-1 focus:ring-invicta transition-all resize-none"></textarea>
-                            </div>
-
-                            <button type="button"
-                                class="w-full bg-invicta text-black font-black py-4 rounded-xl mt-4 active:scale-95 transition-transform flex items-center justify-center gap-2 hover:bg-invicta-dark shadow-[0_0_20px_rgba(34,197,94,0.3)]">
-                                <i class="ph-bold ph-floppy-disk text-xl"></i> Salvar Evento
-                            </button>
-                        </form>
-                    </div>
-                </div>
-
-                <!-- Table -->
-                <div class="lg:col-span-2 space-y-6">
-                    <div class="bg-zinc-900 border border-white/5 rounded-3xl p-6 lg:p-8 h-full flex flex-col relative">
-                        <div
-                            class="absolute top-0 left-8 right-8 h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent">
-                        </div>
-                        <div class="flex items-center justify-between mb-6">
-                            <h3 class="text-xl font-bold">Eventos & Lotes Ativos</h3>
-                            <button class="text-sm font-bold text-invicta hover:text-invicta-dark transition-colors">Ver
-                                todos</button>
-                        </div>
-
-                        <div class="overflow-x-auto flex-1">
-                            <table class="w-full text-left border-collapse min-w-[500px]">
-                                <thead>
-                                    <tr
-                                        class="text-zinc-500 font-bold text-xs uppercase tracking-wider border-b border-white/5">
-                                        <th class="pb-4 pr-4 font-bold">Nome / Data</th>
-                                        <th class="pb-4 px-4 w-1/3 font-bold">Vendas</th>
-                                        <th class="pb-4 px-4 font-bold">Status</th>
-                                        <th class="pb-4 pl-4 text-right font-bold">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-white/5">
-
-                                    <!-- Row 1 -->
-                                    <tr class="hover:bg-white/[0.02] transition-colors group">
-                                        <td class="py-4 pr-4">
-                                            <p class="font-bold text-base">A Maior da UCB - 1º Lote Aluno</p>
-                                            <p class="text-zinc-400 text-sm mt-0.5"><i
-                                                    class="ph-bold ph-calendar-blank inline-block mr-1"></i> 12/11/2026
-                                                - 22:00</p>
-                                        </td>
-                                        <td class="py-4 px-4">
-                                            <div class="flex items-center justify-between text-xs font-bold mb-1">
-                                                <span class="text-invicta">300</span>
-                                                <span class="text-zinc-500">400 (75%)</span>
-                                            </div>
-                                            <div
-                                                class="w-full bg-black rounded-full h-1.5 overflow-hidden border border-white/5">
-                                                <div class="bg-invicta h-1.5 rounded-full" style="width: 75%"></div>
-                                            </div>
-                                        </td>
-                                        <td class="py-4 px-4">
-                                            <span
-                                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-invicta/10 text-invicta text-[11px] font-bold border border-invicta/20 uppercase tracking-wider">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-invicta animate-pulse"></span>
-                                                Ativo
-                                            </span>
-                                        </td>
-                                        <td class="py-4 pl-4 text-right">
-                                            <div
-                                                class="flex items-center justify-end gap-2 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button
-                                                    class="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 text-white flex items-center justify-center transition-colors"
-                                                    title="Editar">
-                                                    <i class="ph-bold ph-pencil-simple text-lg"></i>
-                                                </button>
-                                                <button
-                                                    class="w-9 h-9 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 flex items-center justify-center transition-colors"
-                                                    title="Encerrar Lote">
-                                                    <i class="ph-bold ph-power text-lg"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-
-                                    <!-- Row 2 -->
-                                    <tr class="hover:bg-white/[0.02] transition-colors group">
-                                        <td class="py-4 pr-4">
-                                            <p class="font-bold text-base">A Maior da UCB - 1º Lote Geral</p>
-                                            <p class="text-zinc-400 text-sm mt-0.5"><i
-                                                    class="ph-bold ph-calendar-blank inline-block mr-1"></i> 12/11/2026
-                                                - 22:00</p>
-                                        </td>
-                                        <td class="py-4 px-4">
-                                            <div class="flex items-center justify-between text-xs font-bold mb-1">
-                                                <span class="text-invicta">150</span>
-                                                <span class="text-zinc-500">200 (75%)</span>
-                                            </div>
-                                            <div
-                                                class="w-full bg-black rounded-full h-1.5 overflow-hidden border border-white/5">
-                                                <div class="bg-invicta h-1.5 rounded-full" style="width: 75%"></div>
-                                            </div>
-                                        </td>
-                                        <td class="py-4 px-4">
-                                            <span
-                                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-invicta/10 text-invicta text-[11px] font-bold border border-invicta/20 uppercase tracking-wider">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-invicta animate-pulse"></span>
-                                                Ativo
-                                            </span>
-                                        </td>
-                                        <td class="py-4 pl-4 text-right">
-                                            <div
-                                                class="flex items-center justify-end gap-2 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button
-                                                    class="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 text-white flex items-center justify-center transition-colors"
-                                                    title="Editar">
-                                                    <i class="ph-bold ph-pencil-simple text-lg"></i>
-                                                </button>
-                                                <button
-                                                    class="w-9 h-9 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 flex items-center justify-center transition-colors"
-                                                    title="Encerrar Lote">
-                                                    <i class="ph-bold ph-power text-lg"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-
-                                    <!-- Row 3 -->
-                                    <tr class="hover:bg-white/[0.02] transition-colors group">
-                                        <td class="py-4 pr-4 opacity-50">
-                                            <p class="font-bold text-base">Calourada - Lote Único</p>
-                                            <p class="text-zinc-400 text-sm mt-0.5"><i
-                                                    class="ph-bold ph-calendar-blank inline-block mr-1"></i> 10/08/2026
-                                                - 20:00</p>
-                                        </td>
-                                        <td class="py-4 px-4 opacity-50">
-                                            <div class="flex items-center justify-between text-xs font-bold mb-1">
-                                                <span class="text-zinc-300">500</span>
-                                                <span class="text-zinc-500">500 (100%)</span>
-                                            </div>
-                                            <div
-                                                class="w-full bg-black rounded-full h-1.5 overflow-hidden border border-white/5">
-                                                <div class="bg-zinc-600 h-1.5 rounded-full" style="width: 100%"></div>
-                                            </div>
-                                        </td>
-                                        <td class="py-4 px-4 opacity-50">
-                                            <span
-                                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 text-zinc-400 text-[11px] font-bold border border-white/10 uppercase tracking-wider">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-zinc-500"></span> Encerrado
-                                            </span>
-                                        </td>
-                                        <td class="py-4 pl-4 text-right">
-                                            <div
-                                                class="flex items-center justify-end gap-2 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button
-                                                    class="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 text-white flex items-center justify-center transition-colors"
-                                                    title="Ver Relatório">
-                                                    <i class="ph-bold ph-chart-bar text-lg"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
+                    <ul class="lot-list"></ul>
+                </article>
+            </template>
+            <template id="lot-row">
+                <li class="row-heading">
+                    <div><strong></strong><p class="muted"></p></div>
+                    <button class="button button-secondary button-small" type="button"></button>
+                </li>
+            </template>
+        </section>
     </main>
-
 </body>
-
 </html>
