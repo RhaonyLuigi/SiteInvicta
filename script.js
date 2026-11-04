@@ -1,4 +1,4 @@
-import { availability, createOrder, eventUrl, formatEventDate, money, readDemo, resolveOrder } from "./demo-store.js";
+import { availability, createOrder, eventUrl, money, readDemo, resolveOrder } from "./demo-store.js";
 import qrcode from "./vendor/qrcode.mjs";
 
 const byId = (id) => document.getElementById(id);
@@ -12,6 +12,8 @@ const retry = byId("retry-payment");
 const issued = byId("issued-tickets");
 const validator = byId("open-validator");
 const eventId = new URLSearchParams(location.search).get("evento") || "invicta";
+const dayFormat = new Intl.DateTimeFormat("pt-BR", { dateStyle: "long" });
+const timeFormat = new Intl.DateTimeFormat("pt-BR", { timeStyle: "short" });
 let selectedLot;
 let currentOrder;
 
@@ -48,11 +50,18 @@ function renderCatalog() {
         }
         byId("event-title").textContent = event.name;
         byId("event-intro").textContent = event.description;
-        byId("event-date").textContent = formatEventDate(event.date);
-        byId("event-place").textContent = event.place;
+        const date = new Date(event.date);
+        byId("event-when").dateTime = event.date;
+        byId("event-date").textContent = dayFormat.format(date);
+        byId("event-time").textContent = timeFormat.format(date);
+        const [venue, ...address] = event.place.split(" · ");
+        byId("event-place").textContent = venue;
+        byId("event-address").textContent = address.join(" · ");
+        byId("event-address").hidden = address.length === 0;
         byId("event-price").textContent = available.length
-            ? "A partir de " + money(Math.min(...available.map((lot) => lot.price)))
-            : "Sem ingressos disponíveis";
+            ? money(Math.min(...available.map((lot) => lot.price)))
+            : "Indisponíveis";
+        byId("event-price-note").hidden = available.length === 0;
         byId("event-details").hidden = eventId !== "invicta";
         message.textContent = "Este evento ainda não tem lotes cadastrados.";
         message.hidden = lots.length !== 0;
@@ -175,48 +184,37 @@ window.addEventListener("storage", () => {
 
 renderCatalog();
 
-const hero = byId("hero");
-const video = byId("hero-video");
-const header = document.querySelector(".site-header");
-const motion = matchMedia("(prefers-reduced-motion: reduce)");
-const scrollDistance = 420;
-let pendingFrame = 0;
+if (eventId === "invicta") {
+    const videos = [...document.querySelectorAll("video[data-src]")];
+    const toggle = byId("motion-toggle");
+    const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
 
-function scrubHero() {
-    pendingFrame = 0;
-    const offset = header.offsetHeight - hero.getBoundingClientRect().top;
-    const progress = Math.min(1, Math.max(0, offset / scrollDistance));
-    video.currentTime = progress * Math.max(0, video.duration - 0.05);
-}
-
-function onScroll() {
-    if (!pendingFrame) pendingFrame = requestAnimationFrame(scrubHero);
-}
-
-function syncHero() {
-    const animated = eventId === "invicta" && !motion.matches;
-    if (animated && !video.hasAttribute("src")) {
-        video.preload = "metadata";
-        video.src = video.dataset.src;
+    function updateToggle() {
+        const playing = videos.some((video) => !video.paused);
+        const label = playing ? "Pausar vídeos" : "Reproduzir vídeos";
+        toggle.dataset.playing = playing;
+        toggle.setAttribute("aria-label", label);
+        byId("motion-label").textContent = label;
     }
-    if (!animated && video.hasAttribute("src")) {
-        video.removeAttribute("src");
-        video.load();
-    }
-    if (!animated) {
-        hero.classList.remove("has-scrub");
-        window.removeEventListener("scroll", onScroll);
-        cancelAnimationFrame(pendingFrame);
-        pendingFrame = 0;
-    }
-}
 
-video.addEventListener("loadedmetadata", () => {
-    if (motion.matches || !Number.isFinite(video.duration)) return;
-    hero.style.setProperty("--hero-scroll", scrollDistance + "px");
-    hero.classList.add("has-scrub");
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-});
-motion.addEventListener("change", syncHero);
-syncHero();
+    function setPlayback(playing) {
+        for (const video of videos) {
+            if (playing) {
+                if (!video.hasAttribute("src")) video.src = video.dataset.src;
+                video.play().catch(updateToggle);
+            } else {
+                video.pause();
+            }
+        }
+        updateToggle();
+    }
+
+    for (const video of videos) {
+        video.addEventListener("playing", updateToggle);
+        video.addEventListener("pause", updateToggle);
+    }
+    toggle.hidden = false;
+    toggle.addEventListener("click", () => setPlayback(videos.every((video) => video.paused)));
+    reduceMotion.addEventListener("change", (event) => setPlayback(!event.matches));
+    setPlayback(!reduceMotion.matches);
+}

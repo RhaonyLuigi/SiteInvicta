@@ -12,28 +12,56 @@
     <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
     <header class="site-header">
         <div class="wrap topbar">
-            <a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true">I</span> INVICTA</a>
-            <a class="button button-small" href="#ingressos">Ver ingressos</a>
+            <a class="brand" href="index.html">INVICTA</a>
+            <div class="topbar-actions">
+                <button class="button button-secondary button-small motion-toggle" id="motion-toggle" type="button"
+                        aria-controls="hero-video event-video" aria-label="Reproduzir vídeos" hidden>
+                    <svg class="motion-play" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 4v16l13-8z"/></svg>
+                    <svg class="motion-pause" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg>
+                    <span id="motion-label">Reproduzir vídeos</span>
+                </button>
+                <a class="button button-small" href="#ingressos">Ver ingressos</a>
+            </div>
         </div>
     </header>
     <main id="conteudo">
-        <section id="hero" class="hero">
-            <div class="hero-sticky">
-                <div id="hero-media" class="hero-media" aria-hidden="true">
-                    <video id="hero-video" muted playsinline preload="none" poster="hero-poster.webp" data-src="HeroCaneca-optimized.mp4"></video>
-                </div>
-                <div class="wrap hero-content">
-                    <p class="eyebrow">Atlética Invicta · Biologia UCB</p>
-                    <h1 id="event-title">A Maior da UCB</h1>
-                    <p id="event-intro" class="hero-intro">O evento da Atlética Invicta de Biologia da UCB.</p>
-                    <dl class="event-facts">
-                        <div><dt>Quando</dt><dd id="event-date">12 de novembro · 22h</dd></div>
-                        <div><dt>Onde</dt><dd id="event-place">Arena Hall · SCS, Brasília</dd></div>
-                        <div><dt>Ingressos</dt><dd id="event-price">A partir de R$ 50,00</dd></div>
-                    </dl>
-                    <a class="button" href="#ingressos">Escolher ingresso <span aria-hidden="true">↓</span></a>
-                    <p class="hero-demo">Projeto acadêmico · compra de demonstração</p>
-                </div>
+        <section id="hero" class="hero" aria-labelledby="event-title">
+            <div class="hero-media" aria-hidden="true">
+                <video id="hero-video" muted loop playsinline preload="none" poster="hero-poster.webp" data-src="HeroCaneca-optimized.mp4"></video>
+            </div>
+            <div class="wrap hero-content">
+                <p class="eyebrow">Atlética Invicta · Biologia UCB</p>
+                <h1 id="event-title">A Maior da UCB</h1>
+                <p id="event-intro" class="hero-intro">O evento da Atlética Invicta de Biologia da UCB.</p>
+                <dl class="event-facts">
+                    <div>
+                        <dt><span class="event-fact-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+                                <rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18"/>
+                            </svg>
+                        </span>Data e horário</dt>
+                        <dd><time id="event-when" datetime="2026-11-12T22:00"><span id="event-date">12 de novembro de 2026</span>
+                            <span class="event-fact-note" id="event-time">22:00</span></time></dd>
+                    </div>
+                    <div>
+                        <dt><span class="event-fact-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round">
+                                <path d="M20 10c0 6-8 11-8 11S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/>
+                            </svg>
+                        </span>Local</dt>
+                        <dd><span id="event-place">Arena Hall</span><span class="event-fact-note" id="event-address">SCS, Brasília</span></dd>
+                    </div>
+                    <div>
+                        <dt><span class="event-fact-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 6h18v4a2 2 0 0 0 0 4v4H3v-4a2 2 0 0 0 0-4zM15 9v1m0 4v1"/>
+                            </svg>
+                        </span>Ingressos</dt>
+                        <dd><span id="event-price">R$ 50,00</span><span class="event-fact-note" id="event-price-note">Preço inicial por pessoa</span></dd>
+                    </div>
+                </dl>
+                <a class="button" href="#ingressos">Escolher ingresso <span aria-hidden="true">↓</span></a>
+                <p class="hero-demo">Projeto acadêmico · compra de demonstração</p>
             </div>
         </section>
 
@@ -69,7 +97,8 @@
                     <article class="card"><h3>Lineup secreto</h3><p class="muted">Atrações reveladas em breve.</p></article>
                 </div>
             </div>
-            <video class="event-video" src="Canecas.mp4" poster="caneca-poster.webp" preload="none" playsinline controls aria-label="Vídeo da caneca Invicta"></video>
+            <video id="event-video" class="event-video" data-src="Canecas-horizontal.mp4" poster="caneca-poster.webp"
+                   width="960" height="540" preload="none" muted loop playsinline aria-label="Vídeo da caneca Invicta"></video>
         </section>
     </main>
 
