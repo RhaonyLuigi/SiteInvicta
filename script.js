@@ -44,8 +44,11 @@ function showEvent(event) {
     byId("event-title").textContent = event.name;
     byId("event-organizer").textContent = event.organizer;
     byId("event-intro").textContent = event.description;
-    byId("event-date").textContent = date(event.starts_at) + " · Brasília";
+    byId("event-date").textContent = new Intl.DateTimeFormat("pt-BR", { dateStyle: "long", timeZone: "America/Sao_Paulo" }).format(new Date(event.starts_at));
+    byId("event-time").textContent = new Intl.DateTimeFormat("pt-BR", { timeStyle: "short", timeZone: "America/Sao_Paulo" }).format(new Date(event.starts_at)) + " · Brasília";
+    byId("event-when").dateTime = event.starts_at;
     byId("event-place").textContent = event.place;
+    byId("event-address").hidden = true;
     byId("event-cover").src = event.cover_url;
     byId("cover-caption").hidden = !event.cover_url.includes("atmosfera-invicta");
     byId("event-facts").hidden = false;
@@ -53,18 +56,22 @@ function showEvent(event) {
     byId("refund-policy").textContent = "Política do organizador · " + event.refund_policy;
     const prices = event.lots.filter((lot) => lot.sellable).map((lot) => lot.price_cents);
     byId("event-price").textContent = prices.length ? money(Math.min(...prices)) : "Vendas indisponíveis";
+    byId("mobile-price").textContent = byId("event-price").textContent;
+    byId("event-price-note").textContent = event.fee_mode === "added" ? "Mais taxa da plataforma" : "Preço inicial";
     const list = byId("ticket-list");
     list.replaceChildren();
     if (!event.lots.length) list.append(element("p", "Os lotes serão publicados pela organização.", "muted"));
     for (const lot of event.lots) {
-        const card = element("article", null, "card lot-card");
-        card.append(element("p", lot.name, "eyebrow"), element("h3", lot.category), element("p", money(lot.price_cents), "price"), element("p", lot.description, "muted"));
-        card.append(element("p", lot.available + " disponíveis", "field-help"));
-        const button = element("button", lot.sellable ? "Escolher ingresso" : "Vendas indisponíveis", "button");
+        const card = byId("lot-card").content.firstElementChild.cloneNode(true);
+        for (const [field, value] of Object.entries({ name: lot.name, category: lot.category, price: money(lot.price_cents), description: lot.description, availability: lot.available + " disponíveis" })) {
+            card.querySelector("[data-lot-" + field + "]").textContent = value;
+        }
+        card.querySelector(".lot-unit").textContent = event.fee_mode === "added" ? "por pessoa + taxa da plataforma" : "por pessoa";
+        const button = card.querySelector("button");
+        button.textContent = lot.sellable ? "Escolher ingresso" : "Vendas indisponíveis";
         button.type = "button";
         button.disabled = !lot.sellable;
         button.addEventListener("click", () => openCheckout(lot, event));
-        card.append(button);
         list.append(card);
     }
     byId("sales-note").textContent = event.status === "cancelled" ? "Evento cancelado. Consulte o pedido para acompanhar o reembolso." : "A disponibilidade é confirmada ao reservar seu pedido.";
@@ -78,6 +85,12 @@ function updateQuote() {
     byId("checkout-total").value = money(values.total);
 }
 quantity.addEventListener("input", updateQuote);
+for (const control of document.querySelectorAll("[data-quantity-step]")) {
+    control.addEventListener("click", () => {
+        quantity.value = Math.min(Number(quantity.max), Math.max(1, (quantity.valueAsNumber || 1) + Number(control.dataset.quantityStep)));
+        updateQuote();
+    });
+}
 byId("checkout-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!event.currentTarget.reportValidity()) return;
@@ -126,13 +139,54 @@ try {
     }
 } catch (error) { message(error.message, true); }
 
-const video = byId("event-video");
+const videos = [...document.querySelectorAll("video[data-src]")];
+const toggle = byId("motion-toggle");
 const motion = matchMedia("(prefers-reduced-motion: reduce)");
-function syncToggle() { byId("motion-toggle").textContent = video.paused ? "Reproduzir vídeo" : "Pausar vídeo"; }
-function play() { video.play().catch(syncToggle); }
-video.addEventListener("playing", syncToggle);
-video.addEventListener("pause", syncToggle);
-byId("motion-toggle").addEventListener("click", () => video.paused ? play() : video.pause());
-motion.addEventListener("change", () => { if (motion.matches) video.pause(); else play(); });
-if (!motion.matches) play();
-else syncToggle();
+function syncToggle() {
+    const playing = videos.some((video) => !video.paused);
+    const label = playing ? "Pausar vídeos" : "Reproduzir vídeos";
+    toggle.dataset.playing = playing;
+    toggle.setAttribute("aria-label", label);
+    byId("motion-label").textContent = label;
+}
+function playback(playing) {
+    for (const video of videos) {
+        if (playing) {
+            if (!video.hasAttribute("src")) video.src = video.dataset.src;
+            video.play().catch(syncToggle);
+        } else video.pause();
+    }
+    syncToggle();
+}
+for (const video of videos) {
+    video.addEventListener("playing", syncToggle);
+    video.addEventListener("pause", syncToggle);
+}
+toggle.hidden = false;
+toggle.addEventListener("click", () => playback(videos.every((video) => video.paused)));
+motion.addEventListener("change", () => playback(!motion.matches));
+playback(!motion.matches);
+
+if ("IntersectionObserver" in window) {
+    let heroVisible = true;
+    let ticketsVisible = false;
+    const purchaseObserver = new IntersectionObserver((entries) => {
+        for (const entry of entries) {
+            if (entry.target.id === "hero") heroVisible = entry.isIntersecting;
+            else ticketsVisible = entry.isIntersecting;
+        }
+        byId("mobile-purchase").hidden = !current?.lots.some((lot) => lot.sellable) || heroVisible || ticketsVisible || checkout.open;
+    });
+    purchaseObserver.observe(byId("hero"));
+    purchaseObserver.observe(byId("ingressos"));
+    if (!motion.matches) {
+        const revealObserver = new IntersectionObserver((entries, observer) => {
+            for (const entry of entries) if (entry.isIntersecting) {
+                entry.target.classList.add("is-visible");
+                observer.unobserve(entry.target);
+            }
+        }, { threshold: 0.08 });
+        document.querySelectorAll(".reveal").forEach((item) => revealObserver.observe(item));
+        document.documentElement.classList.add("motion-ready");
+    }
+}

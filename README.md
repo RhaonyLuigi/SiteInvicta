@@ -77,7 +77,7 @@ npm run jobs
 
 ## Design e créditos
 
-Direção: uma bilheteria universitária clara e acolhedora, com data, local, total e estado do ingresso fáceis de encontrar. Interfaces de gestão usam superfícies neutras, verde Invicta nas ações e movimento reduzido quando solicitado pelo aparelho. O vídeo é horizontal, começa sem som e tem botão de pausa.
+O visual aprovado do UI UX Pro Max foi restaurado: destaque verde, títulos grandes, formas arredondadas e cartões de ingresso. Os recursos de conta e gestão acompanham as cores originais. Os vídeos são horizontais, começam sem som e têm botão de pausa; o movimento reduzido do aparelho é respeitado.
 
 O trabalho usa [UI UX Pro Max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) e adapta orientações do [Unslop, criado por Damir Sokolovsky](https://github.com/heydamir/unslop), sob [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). A fotografia de atmosfera existente é ilustrativa, identificada no site; troque pela capa real ao publicar um evento. Fontes e bibliotecas são servidas pelo próprio projeto, com licenças em `assets/fonts/` e `vendor/`.
 

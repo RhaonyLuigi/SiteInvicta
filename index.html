@@ -1,58 +1,204 @@
 <!doctype html>
 <html lang="pt-BR">
-<head><script src="./hosting.js"></script><link rel="icon" href="/assets/app-icon.svg" type="image/svg+xml">
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#1b6047"><meta name="description" content="Eventos da Invicta. Confira a programação, escolha seu ingresso e acompanhe os avisos da organização.">
-<title>Invicta | Eventos e ingressos</title>
-<link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/assets/app-icon-192.png">
-<link rel="preload" href="/assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/app.css">
-<script type="module" src="/script.js"></script>
+<head>
+    <script src="./hosting.js"></script>
+    <link rel="icon" href="/assets/app-icon.svg" type="image/svg+xml">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="apple-touch-icon" href="/assets/app-icon-192.png">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#133d31">
+    <meta name="description" content="Encontre sua galera nos eventos da Atlética Invicta de Biologia da UCB. Confira o evento e escolha seu ingresso.">
+    <title>Invicta | Sua próxima noite começa aqui</title>
+    <link rel="preload" as="image" href="assets/atmosfera-invicta.webp">
+    <link rel="preload" href="assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="app.css">
+    <link rel="stylesheet" href="storefront.css">
+    <script type="module" src="script.js"></script>
 </head>
-<body class="public-site">
-<a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
-<header class="site-header"><div class="wrap topbar"><a class="brand" href="/index.html">Invicta</a><nav aria-label="Principal"><a href="/index.html">Eventos</a><a href="/conta.html">Meus ingressos</a><a href="/admin.html">Organizar</a><a href="/validador.html">Portaria</a></nav></div></header>
-<main id="conteudo">
-<section class="wrap event-hero" aria-labelledby="event-title">
-    <div class="event-copy">
-        <p id="event-organizer" class="eyebrow">Eventos da atlética</p>
-        <h1 id="event-title">Eventos e encontros da Invicta</h1>
-        <p id="event-intro" class="lead">Escolha um evento, confira os lotes e acompanhe seus ingressos pelo celular.</p>
-        <dl class="event-facts" id="event-facts" hidden>
-            <div><dt>Data e horário</dt><dd id="event-date"></dd></div>
-            <div><dt>Local</dt><dd id="event-place"></dd></div>
-            <div><dt>A partir de</dt><dd id="event-price"></dd></div>
-        </dl>
-        <div class="button-group"><a class="button" href="#ingressos">Ver ingressos</a><a class="button button-secondary" href="/conta.html">Minha conta</a></div>
-    </div>
-    <figure class="event-cover"><img id="event-cover" src="/assets/atmosfera-invicta.webp" width="960" height="1200" alt="Atmosfera ilustrativa de um evento" fetchpriority="high"><figcaption id="cover-caption">Imagem ilustrativa</figcaption></figure>
-</section>
-<p class="wrap notice" data-status role="status" hidden></p>
-<section id="ingressos" class="wrap section" aria-labelledby="tickets-title">
-    <div class="section-heading"><h2 id="tickets-title" tabindex="-1">Ingressos</h2><p class="muted" id="sales-note">A disponibilidade é confirmada ao reservar seu pedido.</p></div>
-    <noscript><p class="notice">Ative o JavaScript para consultar os eventos e comprar ingressos.</p></noscript>
-    <div id="ticket-list" class="ticket-grid"></div>
-    <p id="refund-policy" class="policy"></p>
-</section>
-<section class="wrap section" aria-labelledby="catalog-title">
+<body class="storefront">
+    <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+    <header class="site-header">
+        <div class="wrap topbar">
+            <a class="brand" href="index.html" aria-label="Invicta, página inicial">INVICTA<span class="brand-caption">ATLÉTICA · BIOLOGIA UCB</span></a>
+            <nav class="desktop-nav" aria-label="Navegação principal">
+                <a href="#o-evento">O evento</a>
+                <a href="#ingressos">Ingressos</a>
+                <a href="#duvidas">Dúvidas</a>
+                <a href="/conta.html">Meus ingressos</a>
+            </nav>
+            <div class="topbar-actions">
+                <button class="button button-secondary button-small motion-toggle" id="motion-toggle" type="button"
+                        aria-controls="hero-video event-video" aria-label="Reproduzir vídeos" hidden>
+                    <svg class="motion-play" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 4v16l13-8z"/></svg>
+                    <svg class="motion-pause" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg>
+                    <span id="motion-label">Reproduzir vídeos</span>
+                </button>
+                <a class="button button-small" href="#ingressos">Ingressos <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#arrow-up-right"></use></svg></a>
+            </div>
+        </div>
+    </header>
+    <main id="conteudo">
+        <section id="hero" class="hero" aria-labelledby="event-title">
+            <div class="wrap">
+                <div class="hero-layout">
+                    <div class="hero-copy">
+                        <p class="eyebrow"><span class="eyebrow-line" aria-hidden="true"></span> <span id="event-organizer">O próximo encontro da sua galera</span></p>
+                        <h1 id="event-title">A Maior da UCB</h1>
+                        <p id="event-intro" class="hero-intro">Uma noite para encontrar sua galera e viver a Invicta.</p>
+                        <div class="hero-actions">
+                            <a class="button button-large" href="#ingressos">Escolher meu ingresso <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#arrow-up-right"></use></svg></a>
+                            <a class="text-link" href="#o-evento">Conhecer o evento <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#arrow-down"></use></svg></a>
+                        </div>
+                        <p class="hero-note"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#sparkle"></use></svg> Biologia UCB · Brasília · Atlética Invicta</p>
+                    </div>
+                    <dl class="event-facts" id="event-facts">
+                        <div>
+                            <dt><span class="event-fact-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+                                    <rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18"/>
+                                </svg>
+                            </span>Data e horário</dt>
+                            <dd><time id="event-when"><span id="event-date">Em breve</span>
+                                <span class="event-fact-note" id="event-time">Acompanhe as próximas datas</span></time></dd>
+                        </div>
+                        <div>
+                            <dt><span class="event-fact-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round">
+                                    <path d="M20 10c0 6-8 11-8 11S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/>
+                                </svg>
+                            </span>Local</dt>
+                            <dd><span id="event-place">Brasília</span><span class="event-fact-note" id="event-address">Local informado pelo organizador</span></dd>
+                        </div>
+                        <div>
+                            <dt><span class="event-fact-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 6h18v4a2 2 0 0 0 0 4v4H3v-4a2 2 0 0 0 0-4zM15 9v1m0 4v1"/>
+                                </svg>
+                            </span>Ingressos</dt>
+                            <dd><span id="event-price">A anunciar</span><span class="event-fact-note" id="event-price-note">Confira os lotes abaixo</span></dd>
+                        </div>
+                    </dl>
+                    <figure class="hero-art">
+                        <img id="event-cover" src="assets/atmosfera-invicta.webp" width="960" height="1200"
+                             alt="Ilustração do clima de uma festa, com luzes verdes e douradas sobre a galera."
+                             fetchpriority="high">
+                        <span class="art-label">Música. Encontros. Invicta.</span>
+                        <figcaption id="cover-caption">Imagem ilustrativa</figcaption>
+                        <div class="merch-float" id="hero-merch">
+                            <video id="hero-video" muted loop playsinline preload="none" poster="hero-poster.webp" data-src="HeroCaneca-optimized.mp4" aria-hidden="true"></video>
+                            <span>O copo da Invicta <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#arrow-up-right"></use></svg></span>
+                        </div>
+                    </figure>
+                </div>
+            </div>
+        </section>
+
+        <section id="ingressos" class="wrap section ticket-section" aria-labelledby="tickets-title">
+            <div class="section-heading reveal">
+                <div>
+                    <p class="eyebrow">Seu lugar na festa</p>
+                    <h2 id="tickets-title" tabindex="-1">A gente se encontra <em>lá.</em></h2>
+                </div>
+                <p class="section-intro">Escolha seu perfil, confira o que está incluído e garanta o seu ingresso.</p>
+            </div>
+            <p class="demo-note" id="sales-note">A disponibilidade é confirmada ao reservar seu pedido.</p>
+            <noscript><p class="notice">Ative o JavaScript para consultar os eventos e comprar ingressos.</p></noscript>
+            <p id="catalog-message" class="notice" data-status role="status" hidden></p>
+            <div id="ticket-list" class="ticket-grid"></div>
+            <p id="refund-policy" class="policy"></p>
+            <template id="lot-card">
+                <article class="card lot-card">
+                    <div class="lot-heading">
+                        <p class="eyebrow" data-lot-name></p>
+                        <span class="ticket-symbol"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#ticket"></use></svg></span>
+                    </div>
+                    <h3 data-lot-category></h3>
+                    <p class="lot-price-label">Seu ingresso por</p>
+                    <p class="price" data-lot-price></p>
+                    <p class="muted lot-unit">por pessoa</p>
+                    <div class="ticket-divider" aria-hidden="true"></div>
+                    <p class="lot-includes">O que te espera</p>
+                    <p class="muted" data-lot-description></p>
+                    <p class="lot-availability" data-lot-availability></p>
+                    <button class="button" type="button"></button>
+                </article>
+            </template>
+        </section>
+
+        <section class="wrap section" aria-labelledby="catalog-title">
     <div class="section-heading"><h2 id="catalog-title">Outros eventos</h2><form id="search-form" class="search-form"><label for="search">Buscar por evento ou local</label><div class="input-row"><input id="search" name="q" type="search" maxlength="100"><button class="button button-secondary">Buscar</button></div></form></div>
     <div id="event-list" class="event-list-grid"></div>
 </section>
-<section class="wrap section about-row">
-    <div><h2>A Invicta no seu celular</h2><p class="muted">Instale o aplicativo para acessar seus ingressos e ativar os avisos de confirmação, mudanças no evento e lembretes.</p><a href="/conta.html" class="button button-secondary">Acessar o aplicativo</a></div>
-    <div><video id="event-video" src="/Canecas-horizontal.mp4" poster="/caneca-poster.webp" muted loop playsinline preload="none" aria-label="Vídeo da Atlética Invicta"></video><button class="button button-secondary" id="motion-toggle" type="button">Pausar vídeo</button></div>
-</section>
-</main>
+
+        <section class="wrap section" id="o-evento">
+            <div class="experience-panel reveal" id="event-details">
+                <div class="experience-copy">
+                    <p class="eyebrow">Muito além do ingresso</p>
+                    <h2 id="details-title">Da primeira música ao último <em>brinde.</em></h2>
+                    <p class="muted">Junte a galera e venha curtir uma noite com a Atlética Invicta de Biologia da UCB.</p>
+                    <div class="experience-points">
+                        <article><span aria-hidden="true">01</span><div><h3>Seu ingresso no celular</h3><p>Instale o aplicativo e consulte seus ingressos, inclusive offline.</p></div></article>
+                        <article><span aria-hidden="true">02</span><div><h3>Avisos da organização</h3><p>Ative as notificações e acompanhe as informações do seu evento.</p></div></article>
+                    </div>
+                    <a class="button app-access" href="/conta.html">Acessar o aplicativo</a>
+                </div>
+                <div class="experience-media">
+                    <video id="event-video" class="event-video" data-src="Canecas-horizontal.mp4" poster="caneca-poster.webp"
+                           width="960" height="540" preload="none" muted loop playsinline aria-label="Vídeo da caneca Invicta"></video>
+                    <p><span class="eyebrow">Um detalhe para levar com você</span>A identidade da Invicta em movimento.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="wrap section faq-section" id="duvidas" aria-labelledby="faq-title">
+            <div class="reveal">
+                <p class="eyebrow">Antes de escolher</p>
+                <h2 id="faq-title">Ficou alguma <em>dúvida?</em></h2>
+                <p class="muted">Os detalhes para você seguir com tranquilidade.</p>
+            </div>
+            <div class="faq-list">
+                <details><summary>Qual ingresso eu escolho?<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#chevron-down"></use></svg></summary><p>Confira a categoria, os itens incluídos e as regras informadas pela organização em cada lote.</p></details>
+                <details><summary>Como recebo meu ingresso?<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#chevron-down"></use></svg></summary><p>Após a confirmação do pagamento, seu QR Code aparece em Meus ingressos. Entre com o mesmo e-mail para consultar seus pedidos pelo site ou aplicativo.</p></details>
+                <details><summary>Como funciona o pagamento?<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#chevron-down"></use></svg></summary><p>As vendas são abertas após a configuração do recebimento. O pagamento acontece no ambiente do Mercado Pago, e o total com as taxas aplicáveis aparece antes de continuar.</p></details>
+                <details><summary>Como funciona a entrada?<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#chevron-down"></use></svg></summary><p>Apresente o QR Code na portaria. Cada ingresso permite uma entrada, conferida online pela equipe autorizada. Proteja seu código e consulte as regras do evento.</p></details>
+            </div>
+        </section>
+
+        <section class="wrap final-invite reveal" aria-labelledby="invite-title">
+            <div><p class="eyebrow">O próximo encontro é nosso</p><h2 id="invite-title">Chame a galera. Escolha seu ingresso.</h2></div>
+            <a class="button button-large" href="#ingressos">Ver os ingressos <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#arrow-up-right"></use></svg></a>
+        </section>
+    </main>
+
 <dialog id="checkout" aria-labelledby="checkout-title">
     <div class="dialog-header"><h2 id="checkout-title">Seu pedido</h2><form method="dialog"><button class="button button-secondary">Fechar</button></form></div>
     <p id="checkout-lot" class="muted"></p>
     <form id="checkout-form" class="stack">
-        <label for="quantity">Quantidade</label><input id="quantity" type="number" min="1" max="10" value="1" required step="1">
+        <label for="quantity">Quantidade</label><div class="quantity-selector"><button class="quantity-step" type="button" data-quantity-step="-1" aria-label="Diminuir quantidade">−</button><input id="quantity" type="number" min="1" max="10" value="1" required step="1"><button class="quantity-step" type="button" data-quantity-step="1" aria-label="Aumentar quantidade">+</button></div>
         <dl class="order-totals"><div><dt>Ingressos</dt><dd id="subtotal"></dd></div><div id="fee-line"><dt>Taxa da plataforma</dt><dd id="fee"></dd></div><div><dt>Total</dt><dd><output id="checkout-total"></output></dd></div></dl>
         <p class="field-help">Ao continuar, você reserva os ingressos por 15 minutos e confere o pagamento na sua conta.</p>
         <button class="button" id="reserve-button" type="submit">Reservar e continuar</button>
     </form>
     <p id="checkout-status" class="notice" role="status" hidden></p>
 </dialog>
-<footer class="site-footer"><div class="wrap footer-content"><p>Invicta · Biologia UCB · Brasília</p><nav aria-label="Informações"><a href="/privacidade.html">Privacidade</a><a href="/termos.html">Como funciona</a></nav></div></footer>
-</body></html>
+
+    <aside class="mobile-purchase" id="mobile-purchase" aria-label="Acesso rápido aos ingressos" hidden>
+        <div><span>A partir de</span><strong id="mobile-price">A anunciar</strong></div>
+        <a class="button" href="#ingressos">Escolher ingresso <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#arrow-up-right"></use></svg></a>
+    </aside>
+    <footer class="site-footer">
+        <div class="wrap footer-content">
+            <div><a class="brand" href="index.html">INVICTA</a><p>Atlética de Biologia · UCB · Brasília</p></div>
+            <nav aria-label="Conta e informações">
+                <a href="/conta.html">Meus ingressos</a>
+                <a href="admin.html">Organizar eventos</a>
+                <a href="validador.html">Portaria</a>
+                <a href="/privacidade.html">Privacidade</a>
+                <a href="/termos.html">Como funciona</a>
+            </nav>
+        </div>
+    </footer>
+</body>
+</html>
