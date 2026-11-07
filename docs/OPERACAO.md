@@ -33,6 +33,8 @@ A conciliação consulta `/v1/payments/search` por `external_reference`, conform
 
 O repositório inclui `vercel.json`: build `npm run build`, estáticos em `dist/` e função em `api/index.js`. A função usa PostgreSQL externo. As migrações são uma etapa explícita de implantação; a função não altera o schema ao atender usuários.
 
+O endereço antigo no GitHub Pages encaminha para `site-invicta.vercel.app` por `hosting.js`. GitHub Pages não executa a API Node. Se mudar o domínio principal, atualize esse encaminhamento junto das variáveis e URLs do Mercado Pago.
+
 No estado sem banco/chave configurados, `/api/health` responde `ready:false` e o site informa que as vendas ainda não foram abertas. Em produção não existe botão que aprove pagamento local.
 
 Para agendar na Vercel, use um plano compatível com o uso comercial e a frequência necessária, ou um agendador externo que suporte cabeçalho de autorização. O [Hobby é destinado a uso pessoal e não comercial](https://vercel.com/docs/plans/hobby); um agendador externo não altera essa condição da hospedagem. A configuração entregue não cria assinatura paga nem agenda tarefas automaticamente. A cada minuto, chame:

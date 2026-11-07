@@ -10,7 +10,7 @@ export async function build() {
     await rm(target, { recursive: true, force: true });
     await mkdir(target, { recursive: true });
     for (const name of await readdir(root)) {
-        if (/\.(html|css)$/.test(name) || ["script.js", "admin.js", "validador.js", "sw.js", "manifest.webmanifest"].includes(name)) {
+        if (/\.(html|css)$/.test(name) || ["script.js", "admin.js", "validador.js", "hosting.js", "sw.js", "manifest.webmanifest"].includes(name)) {
             await copyFile(join(root, name), join(target, name));
         }
     }
