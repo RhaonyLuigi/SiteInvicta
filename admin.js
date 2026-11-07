@@ -1,105 +1,164 @@
-import { eventUrl, formatEventDate, money, readDemo, saveDemo, soldCount } from "./demo-store.js";
-
+import { api, money, date, inputDate, isoDate, element, button, action, message, requireUser, eventUrl } from "./client/api.js";
+import "./client/pwa.js";
 const byId = (id) => document.getElementById(id);
-const events = byId("admin-events");
-const eventSelect = byId("event-select");
-const status = byId("admin-status");
-
-function render() {
-    try {
-        const state = readDemo();
-        const sales = state.orders.filter((order) => order.status === "approved");
-        byId("revenue").textContent = money(sales.reduce((sum, order) => sum + order.price * order.quantity, 0));
-        byId("sales").textContent = sales.reduce((sum, order) => sum + order.quantity, 0);
-        byId("entries").textContent = state.tickets.filter((ticket) => ticket.orderId && ticket.usedAt).length;
-
-        const selected = eventSelect.value;
-        eventSelect.replaceChildren();
-        events.replaceChildren();
-        for (const event of state.events) {
-            eventSelect.add(new Option(event.name, event.id, false, event.id === selected));
-            const row = byId("event-row").content.cloneNode(true);
-            row.querySelector("h3").textContent = event.name;
-            row.querySelector("[data-event-meta]").textContent = formatEventDate(event.date) + " · " + event.place;
-            const link = row.querySelector("a");
-            link.href = eventUrl("index.html", event.id);
-            link.setAttribute("aria-label", "Ver página de " + event.name);
-            const lotList = row.querySelector("ul");
-            for (const lot of state.lots.filter((item) => item.eventId === event.id)) {
-                const item = byId("lot-row").content.cloneNode(true);
-                const label = lot.name + " · " + lot.category;
-                item.querySelector("strong").textContent = label;
-                item.querySelector("p").textContent = [
-                    money(lot.price), soldCount(state, lot.id) + "/" + lot.capacity + " vendidos",
-                    lot.closed ? "Encerrado" : "Aberto"
-                ].join(" · ");
-                const button = item.querySelector("button");
-                button.textContent = lot.closed ? "Reabrir lote" : "Encerrar lote";
-                button.setAttribute("aria-label", button.textContent + " " + label);
-                button.dataset.lotId = lot.id;
-                button.addEventListener("click", () => toggleLot(lot.id));
-                lotList.append(item);
+const eventForm = byId("event-form");
+const lotForm = byId("lot-form");
+let data = { organizations: [], events: [] };
+let summary;
+let user;
+const org = () => data.organizations.find((item) => item.id === byId("org-select").value);
+const state = { draft: "Rascunho", published: "Publicado", closed: "Vendas pausadas", cancelled: "Cancelado", pending: "Aguardando análise", approved: "Aprovado", denied: "Recusado", owner: "Responsável", manager: "Gestão de eventos", checkin: "Portaria" };
+function resetEvent() { eventForm.reset(); eventForm.elements.id.value = ""; }
+function resetLot() { lotForm.reset(); lotForm.elements.id.value = ""; }
+function fillEvent(event) {
+    for (const key of ["name", "description", "place", "capacity"]) eventForm.elements[key].value = event[key];
+    eventForm.elements.id.value = event.id;
+    eventForm.elements.startsAt.value = inputDate(event.starts_at);
+    eventForm.elements.endsAt.value = inputDate(event.ends_at);
+    eventForm.elements.coverUrl.value = event.cover_url;
+    eventForm.elements.refundPolicy.value = event.refund_policy;
+    eventForm.scrollIntoView({ block: "start" });
+}
+function fillLot(lot) {
+    for (const key of ["name", "category", "description", "capacity"]) lotForm.elements[key].value = lot[key];
+    lotForm.elements.id.value = lot.id;
+    lotForm.elements.eventId.value = lot.event_id;
+    lotForm.elements.price.value = (lot.price_cents / 100).toFixed(2);
+    lotForm.elements.salesStart.value = inputDate(lot.sales_start);
+    lotForm.elements.salesEnd.value = inputDate(lot.sales_end);
+    lotForm.elements.closed.checked = lot.closed;
+    lotForm.scrollIntoView({ block: "start" });
+}
+async function load(selected) {
+    data = await api("/manage");
+    const select = byId("org-select");
+    const value = selected || select.value;
+    select.replaceChildren();
+    for (const item of data.organizations) select.add(new Option(item.name, item.id, false, item.id === value));
+    byId("manage").hidden = false;
+    await render();
+}
+async function render() {
+    const current = org();
+    const canManage = current && current.role !== "checkin";
+    byId("manager-tools").hidden = !canManage;
+    byId("team-tools").hidden = !canManage;
+    byId("refund-tools").hidden = !canManage;
+    const select = byId("event-select");
+    select.replaceChildren();
+    const events = data.events.filter((item) => item.org_id === current?.id);
+    for (const event of events) select.add(new Option(event.name, event.id));
+    const list = byId("event-list");
+    list.replaceChildren();
+    if (!events.length) list.append(element("p", "Crie um evento para cadastrar seus lotes.", "muted"));
+    for (const event of events) {
+        const card = element("article", null, "card stack");
+        card.append(element("h3", event.name), element("p", date(event.starts_at) + " · " + event.place, "muted"), element("p", state[event.status], "field-help"));
+        const actions = element("div", null, "button-group");
+        const scan = element("a", "Abrir portaria", "button button-secondary");
+        scan.href = "/validador.html?evento=" + event.id;
+        actions.append(scan);
+        if (event.status !== "draft") { const link = element("a", "Página do evento", "button button-secondary"); link.href = eventUrl(event); actions.append(link); }
+        if (canManage) {
+            actions.append(button("Editar evento", () => fillEvent(event), true));
+            for (const [label, status] of [["Publicar", "published"], ["Pausar vendas", "closed"], ["Cancelar evento", "cancelled"]]) {
+                if (event.status === status || event.status === "cancelled") continue;
+                actions.append(button(label, async () => {
+                    if (status === "cancelled" && !confirm("Cancelar o evento e iniciar os reembolsos dos pedidos pagos?")) return;
+                    await api("/manage/events/" + event.id + "/status", { method: "POST", body: { status } });
+                    await load(current.id); message("Evento atualizado.");
+                }, true));
             }
-            if (!lotList.children.length) {
-                const empty = document.createElement("li");
-                empty.textContent = "Nenhum lote cadastrado.";
-                lotList.append(empty);
-            }
-            events.append(row);
+            const exportLink = element("a", "Exportar participantes", "button button-secondary");
+            exportLink.href = "/api/manage/events/" + event.id + "/participants.csv";
+            actions.append(exportLink);
         }
-    } catch {
-        status.textContent = "Não foi possível abrir os dados de demonstração.";
+        card.append(actions);
+        const lots = data.lots.filter((lot) => lot.event_id === event.id);
+        for (const lot of lots) {
+            const row = element("div", null, "data-row");
+            row.append(element("span", lot.name + " · " + lot.category + " · " + money(lot.price_cents)));
+            if (canManage) row.append(button("Editar lote", () => fillLot(lot), true));
+            card.append(row);
+        }
+        if (canManage && event.status !== "draft") {
+            const details = element("details");
+            details.append(element("summary", "Enviar aviso aos participantes"));
+            const form = element("form", null, "stack");
+            const title = element("input"); title.name = "title"; title.required = true; title.minLength = 3; title.maxLength = 100; title.id = "title-" + event.id;
+            const body = element("textarea"); body.name = "body"; body.required = true; body.minLength = 5; body.maxLength = 1000; body.id = "body-" + event.id;
+            const labelTitle = element("label", "Assunto"); labelTitle.htmlFor = title.id;
+            const labelBody = element("label", "Mensagem"); labelBody.htmlFor = body.id;
+            const send = element("button", "Enviar aviso", "button"); send.type = "submit";
+            form.append(labelTitle, title, labelBody, body, send);
+            action(form, async (values) => {
+                const result = await api("/manage/events/" + event.id + "/announcement", { method: "POST", body: { ...values, key: crypto.randomUUID() } });
+                message("Aviso registrado para " + result.recipients + " participante(s)."); form.reset(); details.open = false;
+            });
+            details.append(form); card.append(details);
+        }
+        list.append(card);
     }
-}
-
-function saveForm(event, addRecord) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const data = Object.fromEntries(new FormData(form));
-    for (const key of Object.keys(data)) data[key] = data[key].trim();
-    try {
-        const state = readDemo();
-        const { message, eventId } = addRecord(state, data);
-        saveDemo(state);
-        form.reset();
-        render();
-        eventSelect.value = eventId;
-        status.textContent = message;
-    } catch (error) {
-        status.textContent = error.message;
+    if (!canManage) return;
+    summary = await api("/manage/organizations/" + current.id);
+    byId("sold").textContent = summary.summary.tickets;
+    byId("gross").textContent = money(summary.summary.gross_cents);
+    byId("net").textContent = money(Number(summary.summary.gross_cents) - Number(summary.summary.platform_cents) - Number(summary.summary.provider_cents));
+    byId("receiving-status").textContent = current.mp_user_id ? "Conta Mercado Pago conectada" : "Conecte a conta que receberá os pagamentos.";
+    byId("commission-status").textContent = current.fee_bps === null ? "Comissão pendente de configuração pela plataforma." : "Comissão " + (current.fee_bps / 100).toFixed(2) + "% · " + (current.fee_mode === "added" ? "acrescida ao comprador" : "descontada do organizador");
+    const receiving = byId("receiving-actions");
+    receiving.replaceChildren();
+    if (current.role === "owner") receiving.append(button("Conectar Mercado Pago", async () => {
+        const result = await api("/payments/connect", { method: "POST", body: { orgId: current.id } });
+        location.assign(result.url);
+    }));
+    if (user.platformOwner) { const link = element("a", "Definir comissão", "button button-secondary"); link.href = "/plataforma.html"; receiving.append(link); }
+    const team = byId("team-list"); team.replaceChildren();
+    for (const person of summary.team) {
+        const row = element("div", null, "data-row");
+        row.append(element("span", person.name + " · " + person.email + " · " + state[person.role]));
+        if (current.role === "owner" && person.role !== "owner") row.append(button("Remover acesso", async () => {
+            await api("/manage/organizations/" + current.id + "/members/" + person.id, { method: "DELETE" }); await render();
+        }, true));
+        team.append(row);
     }
-}
-
-byId("event-form").addEventListener("submit", (event) => saveForm(event, (state, data) => {
-    if (!data.name || !data.place) throw new Error("Preencha o nome e o local do evento.");
-    const id = crypto.randomUUID();
-    state.events.push({ ...data, id });
-    return { message: "Evento de teste salvo. Você já pode adicionar um lote.", eventId: id };
-}));
-
-byId("lot-form").addEventListener("submit", (event) => saveForm(event, (state, data) => {
-    if (!data.name || !data.category) throw new Error("Preencha o nome do lote e a categoria.");
-    if (!state.events.some((item) => item.id === data.eventId)) throw new Error("Escolha um evento.");
-    state.lots.push({
-        ...data, id: crypto.randomUUID(), price: Math.round(Number(data.price) * 100),
-        capacity: Number(data.capacity), closed: false
-    });
-    return { message: "Lote de teste salvo.", eventId: data.eventId };
-}));
-
-function toggleLot(lotId) {
-    try {
-        const state = readDemo();
-        const lot = state.lots.find((item) => item.id === lotId);
-        lot.closed = !lot.closed;
-        saveDemo(state);
-        render();
-        [...events.querySelectorAll("button")].find((item) => item.dataset.lotId === lotId)?.focus();
-        status.textContent = lot.closed ? "Lote encerrado na demonstração." : "Lote reaberto na demonstração.";
-    } catch {
-        status.textContent = "Não foi possível atualizar este lote.";
+    byId("invite-form").hidden = current.role !== "owner";
+    const refunds = byId("refund-list"); refunds.replaceChildren();
+    if (!summary.refunds.length && !summary.pendingRefunds.length) refunds.append(element("p", "Nenhuma solicitação pendente.", "muted"));
+    for (const request of summary.refunds) {
+        const card = element("article", null, "card stack");
+        card.append(element("h3", request.event_name), element("p", request.buyer + " · " + money(request.total_cents)), element("p", request.reason), element("p", state[request.status], "field-help"));
+        if (request.status === "pending") {
+            const text = element("textarea"); text.minLength = 5; text.maxLength = 500; text.id = "refund-" + request.id;
+            const label = element("label", "Resposta ao comprador"); label.htmlFor = text.id;
+            const choices = element("div", null, "button-group");
+            for (const [title, approve] of [["Aprovar reembolso", true], ["Recusar solicitação", false]]) {
+                choices.append(button(title, async () => {
+                    if (text.value.trim().length < 5) { text.focus(); throw new Error("Escreva uma resposta para o comprador."); }
+                    if (approve && !confirm("Confirmar o reembolso deste pedido?")) return;
+                    await api("/manage/refunds/" + request.id, { method: "POST", body: { approve, reason: text.value } }); await render();
+                }, !approve));
+            }
+            card.append(label, text, choices);
+        }
+        refunds.append(card);
     }
+    for (const order of summary.pendingRefunds) refunds.append(element("p", order.name + " · Reembolso em processamento · " + order.id, "notice"));
 }
-
-window.addEventListener("storage", render);
-render();
+action(byId("org-form"), async (values, form) => { const item = await api("/manage/organizations", { method: "POST", body: values }); form.reset(); await load(item.id); message("Organização criada."); });
+action(eventForm, async (values) => {
+    if (!org()) throw new Error("Crie uma organização primeiro.");
+    const input = { name: values.name, description: values.description, place: values.place, startsAt: isoDate(values.startsAt), endsAt: isoDate(values.endsAt), capacity: Number(values.capacity), coverUrl: values.coverUrl, refundPolicy: values.refundPolicy };
+    const path = values.id ? "/manage/events/" + values.id : "/manage/organizations/" + org().id + "/events";
+    await api(path, { method: values.id ? "PUT" : "POST", body: input }); resetEvent(); await load(org().id); message("Evento salvo como rascunho ou atualização.");
+});
+action(lotForm, async (values) => {
+    const input = { name: values.name, category: values.category, description: values.description, priceCents: Math.round(Number(values.price) * 100), capacity: Number(values.capacity), salesStart: isoDate(values.salesStart), salesEnd: isoDate(values.salesEnd), closed: values.closed === "on" };
+    await api(values.id ? "/manage/lots/" + values.id : "/manage/events/" + values.eventId + "/lots", { method: values.id ? "PUT" : "POST", body: input });
+    resetLot(); await load(org().id); message("Lote salvo.");
+});
+action(byId("invite-form"), async (values, form) => { const result = await api("/manage/organizations/" + org().id + "/invitations", { method: "POST", body: values }); message(result.message); form.reset(); });
+byId("org-select").addEventListener("change", () => { resetEvent(); resetLot(); render().catch((error) => message(error.message, true)); });
+byId("new-event").addEventListener("click", resetEvent);
+byId("new-lot").addEventListener("click", resetLot);
+try { user = await requireUser(); if (user) await load(); } catch (error) { message(error.message, true); }

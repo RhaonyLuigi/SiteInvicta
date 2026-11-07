@@ -1,0 +1,11 @@
+node_modules/
+.env
+.env.*
+!.env.example
+.data/
+dist/
+coverage/
+playwright-report/
+test-results/
+test-results.log
+browser-test.log

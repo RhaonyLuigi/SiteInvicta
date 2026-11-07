@@ -1,305 +1,138 @@
-import { availability, createOrder, eventUrl, money, readDemo, resolveOrder } from "./demo-store.js";
-import qrcode from "./vendor/qrcode.mjs";
+import { api, money, date, element, eventUrl, quote, message } from "./client/api.js";
+import "./client/pwa.js";
 
-const byId = (id) => document.getElementById(id);
-const list = byId("ticket-list");
-const checkout = byId("checkout");
-const form = byId("checkout-form");
-const quantity = byId("quantity");
-const status = byId("checkout-status");
-const actions = byId("payment-actions");
-const retry = byId("retry-payment");
-const issued = byId("issued-tickets");
-const validator = byId("open-validator");
-const purchaseBar = byId("mobile-purchase");
-const eventId = new URLSearchParams(location.search).get("evento") || "invicta";
-const dayFormat = new Intl.DateTimeFormat("pt-BR", { dateStyle: "long" });
-const timeFormat = new Intl.DateTimeFormat("pt-BR", { timeStyle: "short" });
+let current;
 let selectedLot;
-let currentOrder;
-let heroVisible = true;
-let ticketsVisible = false;
-let hasAvailableTickets = false;
-
-function updatePurchaseBar() {
-    purchaseBar.hidden = heroVisible || ticketsVisible || !hasAvailableTickets || checkout.open;
-}
-
-function renderTickets(container, tickets) {
-    container.replaceChildren();
-    for (const ticket of tickets) {
-        const card = byId("issued-ticket").content.cloneNode(true);
-        const qr = qrcode(0, "M");
-        qr.addData(ticket.code);
-        qr.make();
-        card.querySelector("img").src = qr.createDataURL(5);
-        card.querySelector("code").textContent = ticket.code;
-        container.append(card);
-    }
-    container.hidden = tickets.length === 0;
-}
-
-function renderCatalog() {
-    const message = byId("catalog-message");
-    try {
-        const state = readDemo();
-        const event = state.events.find((item) => item.id === eventId);
-        const lots = state.lots.filter((item) => item.eventId === eventId);
-        const available = lots.filter((lot) => !lot.closed && availability(state, lot) > 0);
-        hasAvailableTickets = Boolean(event) && available.length > 0;
-        updatePurchaseBar();
-        list.replaceChildren();
-        const showExperience = Boolean(event) && eventId === "invicta";
-        document.querySelector(".event-facts").hidden = !event;
-        byId("o-evento").hidden = !showExperience;
-        byId("hero-merch").hidden = !showExperience;
-        for (const link of document.querySelectorAll('[href="#o-evento"]')) {
-            link.hidden = !showExperience;
-        }
-        if (!event) {
-            byId("event-title").textContent = "Evento indisponível";
-            byId("event-intro").textContent = "Abra a página inicial para ver o evento principal.";
-            message.textContent = "Evento não encontrado neste navegador.";
-            message.hidden = false;
-            return;
-        }
-        const title = byId("event-title");
-        title.textContent = event.name;
-        if (event.name === "A Maior da UCB") {
-            const accent = document.createElement("em");
-            accent.textContent = "da UCB";
-            title.replaceChildren(document.createTextNode("A Maior "), accent);
-        }
-        byId("event-intro").textContent = event.description;
-        const date = new Date(event.date);
-        byId("event-when").dateTime = event.date;
-        byId("event-date").textContent = dayFormat.format(date);
-        byId("event-time").textContent = timeFormat.format(date);
-        const [venue, ...address] = event.place.split(" · ");
-        byId("event-place").textContent = venue;
-        byId("event-address").textContent = address.join(" · ");
-        byId("event-address").hidden = address.length === 0;
-        byId("event-price").textContent = available.length
-            ? money(Math.min(...available.map((lot) => lot.price)))
-            : "Indisponíveis";
-        byId("event-price-note").hidden = available.length === 0;
-        byId("mobile-price").textContent = byId("event-price").textContent;
-        message.textContent = "Este evento ainda não tem lotes cadastrados.";
-        message.hidden = lots.length !== 0;
-
-        for (const lot of lots) {
-            const card = byId("lot-card").content.cloneNode(true);
-            const remaining = availability(state, lot);
-            const button = card.querySelector("button");
-            card.querySelector("[data-lot-name]").textContent = lot.name;
-            card.querySelector("[data-lot-category]").textContent = lot.category;
-            card.querySelector("[data-lot-price]").textContent = money(lot.price).replace(/\u00a0/g, " ");
-            card.querySelector("[data-lot-description]").textContent = lot.description;
-            card.querySelector("[data-lot-availability]").textContent = lot.closed ? "Lote encerrado" : remaining + " disponíveis";
-            button.textContent = lot.closed ? "Lote encerrado" : remaining ? "Comprar " + lot.category : "Esgotado";
-            button.disabled = lot.closed || remaining === 0;
-            button.dataset.lotId = lot.id;
-            button.addEventListener("click", () => openCheckout(lot, remaining, state));
-            list.append(card);
-        }
-
-        const savedTickets = state.tickets.filter((ticket) => ticket.eventId === eventId && ticket.orderId);
-        byId("saved-tickets").hidden = savedTickets.length === 0;
-        if (byId("saved-tickets").open) renderTickets(byId("saved-ticket-list"), savedTickets);
-    } catch {
-        hasAvailableTickets = false;
-        updatePurchaseBar();
-        message.textContent = "Não foi possível abrir os dados de demonstração neste navegador.";
-        message.hidden = false;
-    }
-}
-
-function updateTotal() {
-    byId("checkout-total").value = quantity.validity.valid ? money(quantity.valueAsNumber * selectedLot.price) : "—";
-    document.querySelector('[data-quantity-step="-1"]').disabled = quantity.valueAsNumber <= Number(quantity.min);
-    document.querySelector('[data-quantity-step="1"]').disabled = quantity.valueAsNumber >= Number(quantity.max);
-    if (quantity.getAttribute("aria-invalid") === "true") validateQuantity();
-}
-
-function validateQuantity() {
-    const valid = quantity.validity.valid;
-    const error = byId("quantity-error");
-    quantity.setAttribute("aria-invalid", String(!valid));
-    error.textContent = valid ? "" : "Escolha uma quantidade inteira de 1 a " + quantity.max + ".";
-    error.hidden = valid;
-    return valid;
-}
-
-function setCheckoutStep(step) {
-    for (const item of document.querySelectorAll("[data-checkout-step]")) {
-        if (item.dataset.checkoutStep === step) item.setAttribute("aria-current", "step");
-        else item.removeAttribute("aria-current");
-    }
-}
-
-function showOrder(message = "Pedido criado. Escolha o resultado do pagamento de teste.") {
-    setCheckoutStep("confirmation");
-    form.hidden = true;
-    actions.hidden = false;
-    retry.hidden = true;
-    status.textContent = message;
-}
-
-function openCheckout(lot, remaining, state) {
+let requestKey;
+const checkout = document.getElementById("checkout");
+const quantity = document.getElementById("quantity");
+const status = document.getElementById("checkout-status");
+const byId = (id) => document.getElementById(id);
+function openCheckout(lot, event, count = 1) {
     selectedLot = lot;
-    currentOrder = state.orders.findLast((order) => order.lotId === lot.id && order.status === "pending");
-    byId("checkout-lot").textContent = lot.name + " · " + lot.category + " · " + money(lot.price) + " por ingresso";
-    quantity.max = Math.min(5, remaining);
-    quantity.value = 1;
-    quantity.removeAttribute("aria-invalid");
-    byId("quantity-error").hidden = true;
-    byId("quantity-error").textContent = "";
-    byId("quantity-help").textContent = Number(quantity.max) === 1
-        ? "Há 1 ingresso disponível neste lote."
-        : "Escolha entre 1 e " + quantity.max + " ingressos.";
-    setCheckoutStep("review");
-    updateTotal();
-    form.hidden = false;
-    status.textContent = "";
-    actions.hidden = true;
-    retry.hidden = true;
-    issued.hidden = true;
-    validator.hidden = true;
-    if (currentOrder) {
-        showOrder("Pedido pendente · " + currentOrder.quantity + " ingresso(s) · " + money(currentOrder.quantity * currentOrder.price));
-    }
-    if (!checkout.open) checkout.showModal();
-    updatePurchaseBar();
-    (currentOrder ? byId("approve-payment") : quantity).focus();
+    requestKey = crypto.randomUUID();
+    byId("checkout-lot").textContent = event.name + " · " + lot.category;
+    quantity.max = Math.min(10, lot.available);
+    quantity.value = Math.min(Number(quantity.max), Math.max(1, count));
+    updateQuote();
+    message("", false, status);
+    checkout.showModal();
+    quantity.focus();
 }
 
-form.addEventListener("submit", (event) => {
+function showEvents(events) {
+    const list = byId("event-list");
+    list.replaceChildren();
+    if (!events.length) list.append(element("p", "Nenhum evento disponível no momento.", "muted"));
+    for (const event of events) {
+        const card = element("article", null, "card event-card");
+        const link = element("a");
+        link.href = eventUrl(event);
+        const image = element("img");
+        image.src = event.cover_url;
+        image.alt = "Capa de " + event.name;
+        image.loading = "lazy";
+        image.width = 640;
+        image.height = 400;
+        link.append(image, element("h3", event.name), element("p", date(event.starts_at), "muted"), element("p", event.place, "muted"));
+        card.append(link);
+        list.append(card);
+    }
+}
+function showEvent(event) {
+    current = event;
+    byId("event-title").textContent = event.name;
+    byId("event-organizer").textContent = event.organizer;
+    byId("event-intro").textContent = event.description;
+    byId("event-date").textContent = date(event.starts_at) + " · Brasília";
+    byId("event-place").textContent = event.place;
+    byId("event-cover").src = event.cover_url;
+    byId("cover-caption").hidden = !event.cover_url.includes("atmosfera-invicta");
+    byId("event-facts").hidden = false;
+    document.title = event.name + " | Invicta";
+    byId("refund-policy").textContent = "Política do organizador · " + event.refund_policy;
+    const prices = event.lots.filter((lot) => lot.sellable).map((lot) => lot.price_cents);
+    byId("event-price").textContent = prices.length ? money(Math.min(...prices)) : "Vendas indisponíveis";
+    const list = byId("ticket-list");
+    list.replaceChildren();
+    if (!event.lots.length) list.append(element("p", "Os lotes serão publicados pela organização.", "muted"));
+    for (const lot of event.lots) {
+        const card = element("article", null, "card lot-card");
+        card.append(element("p", lot.name, "eyebrow"), element("h3", lot.category), element("p", money(lot.price_cents), "price"), element("p", lot.description, "muted"));
+        card.append(element("p", lot.available + " disponíveis", "field-help"));
+        const button = element("button", lot.sellable ? "Escolher ingresso" : "Vendas indisponíveis", "button");
+        button.type = "button";
+        button.disabled = !lot.sellable;
+        button.addEventListener("click", () => openCheckout(lot, event));
+        card.append(button);
+        list.append(card);
+    }
+    byId("sales-note").textContent = event.status === "cancelled" ? "Evento cancelado. Consulte o pedido para acompanhar o reembolso." : "A disponibilidade é confirmada ao reservar seu pedido.";
+}
+function updateQuote() {
+    if (!selectedLot || !quantity.validity.valid) return;
+    const values = quote(selectedLot, current, quantity.valueAsNumber);
+    byId("subtotal").textContent = money(values.subtotal);
+    byId("fee-line").hidden = current.fee_mode !== "added";
+    byId("fee").textContent = money(values.fee);
+    byId("checkout-total").value = money(values.total);
+}
+quantity.addEventListener("input", updateQuote);
+byId("checkout-form").addEventListener("submit", async (event) => {
     event.preventDefault();
-    if (!validateQuantity()) {
-        quantity.focus();
-        return;
-    }
+    if (!event.currentTarget.reportValidity()) return;
+    const button = byId("reserve-button");
+    button.disabled = true;
+    message("Reservando…", false, status);
     try {
-        currentOrder = createOrder(eventId, selectedLot.id, quantity.valueAsNumber);
-        showOrder("Pagamento de teste pendente · " + money(currentOrder.quantity * currentOrder.price));
-        byId("approve-payment").focus();
-    } catch (error) {
-        status.textContent = error.message;
-    }
-});
-
-function finishPayment(result) {
-    try {
-        const response = resolveOrder(currentOrder.id, result);
-        currentOrder = null;
-        actions.hidden = true;
-        retry.hidden = response.tickets.length > 0;
-        status.textContent = response.message;
-        renderTickets(issued, response.tickets);
-        validator.href = eventUrl("validador.html", eventId);
-        validator.hidden = response.tickets.length === 0;
-        (retry.hidden ? checkout.querySelector("[method=dialog] button") : retry).focus();
-    } catch (error) {
-        status.textContent = error.message;
-        actions.hidden = true;
-        retry.hidden = false;
-        retry.focus();
-    }
-}
-
-byId("approve-payment").addEventListener("click", () => finishPayment("approved"));
-byId("decline-payment").addEventListener("click", () => finishPayment("declined"));
-byId("retry-payment").addEventListener("click", () => {
-    try {
-        const state = readDemo();
-        const lot = state.lots.find((item) => item.id === selectedLot.id);
-        const remaining = lot && !lot.closed ? availability(state, lot) : 0;
-        if (remaining === 0) {
-            status.textContent = "Este lote ficou indisponível. Feche o checkout para escolher outro.";
+        const { user } = await api("/me");
+        if (!user) {
+            try { sessionStorage.setItem("invicta-selection", JSON.stringify({ eventId: current.id, lotId: selectedLot.id, quantity: quantity.valueAsNumber })); } catch { /* O acesso também funciona sem armazenamento. */ }
+            location.assign("/conta.html?voltar=" + encodeURIComponent(eventUrl(current)));
             return;
         }
-        openCheckout(lot, remaining, state);
-    } catch {
-        status.textContent = "Não foi possível acessar os lotes de demonstração.";
-    }
+        const order = await api("/orders", { method: "POST", body: { lotId: selectedLot.id, quantity: quantity.valueAsNumber, key: requestKey } });
+        location.assign("/conta.html?pedido=" + order.id);
+    } catch (error) {
+        message(error.message, true, status);
+    } finally { button.disabled = false; }
 });
-quantity.addEventListener("input", updateTotal);
-quantity.addEventListener("blur", validateQuantity);
-for (const button of document.querySelectorAll("[data-quantity-step]")) {
-    button.addEventListener("click", () => {
-        quantity.stepUp(Number(button.dataset.quantityStep));
-        updateTotal();
-    });
-}
-checkout.addEventListener("close", () => {
-    if (checkout.open) return;
-    renderCatalog();
-    const button = [...list.querySelectorAll("button")].find((item) => item.dataset.lotId === selectedLot.id);
-    (button && !button.disabled ? button : byId("tickets-title")).focus();
-});
-byId("saved-tickets").addEventListener("toggle", () => {
-    if (byId("saved-tickets").open) renderCatalog();
-});
-window.addEventListener("storage", () => {
-    if (!checkout.open) renderCatalog();
+byId("search-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    try { showEvents((await api("/events?q=" + encodeURIComponent(byId("search").value))).events); }
+    catch (error) { message(error.message, true); }
 });
 
-renderCatalog();
-
-const purchaseObserver = new IntersectionObserver((entries) => {
-    for (const entry of entries) {
-        if (entry.target.id === "hero") heroVisible = entry.isIntersecting;
-        else ticketsVisible = entry.isIntersecting;
-    }
-    updatePurchaseBar();
-});
-purchaseObserver.observe(byId("hero"));
-purchaseObserver.observe(byId("ingressos"));
-
-if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    const revealObserver = new IntersectionObserver((entries, observer) => {
-        for (const entry of entries) {
-            if (entry.isIntersecting) {
-                entry.target.classList.add("is-visible");
-                observer.unobserve(entry.target);
+try {
+    const health = await api("/health");
+    if (!health.ready) {
+        message(health.message);
+        byId("sales-note").textContent = "As vendas serão abertas após a configuração da plataforma.";
+    } else {
+        const { events } = await api("/events");
+        showEvents(events);
+        const selected = new URLSearchParams(location.search).get("evento");
+        if (selected) showEvent(await api("/events/" + encodeURIComponent(selected)));
+        else if (events[0]) showEvent(events[0]);
+        else byId("sales-note").textContent = "A organização publicará as próximas datas aqui.";
+        try {
+            const saved = JSON.parse(sessionStorage.getItem("invicta-selection") || "null");
+            if (saved?.eventId === current?.id) {
+                sessionStorage.removeItem("invicta-selection");
+                const lot = current.lots.find((item) => item.id === saved.lotId && item.sellable);
+                if (lot) openCheckout(lot, current, saved.quantity);
             }
-        }
-    }, { threshold: 0.08 });
-    for (const element of document.querySelectorAll(".reveal")) revealObserver.observe(element);
-    document.documentElement.classList.add("motion-ready");
-}
-
-if (eventId === "invicta") {
-    const videos = [...document.querySelectorAll("video[data-src]")];
-    const toggle = byId("motion-toggle");
-    const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
-
-    function updateToggle() {
-        const playing = videos.some((video) => !video.paused);
-        const label = playing ? "Pausar vídeos" : "Reproduzir vídeos";
-        toggle.dataset.playing = playing;
-        toggle.setAttribute("aria-label", label);
-        byId("motion-label").textContent = label;
+        } catch { /* A seleção pode ser refeita na lista de lotes. */ }
     }
+} catch (error) { message(error.message, true); }
 
-    function setPlayback(playing) {
-        for (const video of videos) {
-            if (playing) {
-                if (!video.hasAttribute("src")) video.src = video.dataset.src;
-                video.play().catch(updateToggle);
-            } else {
-                video.pause();
-            }
-        }
-        updateToggle();
-    }
-
-    for (const video of videos) {
-        video.addEventListener("playing", updateToggle);
-        video.addEventListener("pause", updateToggle);
-    }
-    toggle.hidden = false;
-    toggle.addEventListener("click", () => setPlayback(videos.every((video) => video.paused)));
-    reduceMotion.addEventListener("change", (event) => setPlayback(!event.matches));
-    setPlayback(!reduceMotion.matches);
-}
+const video = byId("event-video");
+const motion = matchMedia("(prefers-reduced-motion: reduce)");
+function syncToggle() { byId("motion-toggle").textContent = video.paused ? "Reproduzir vídeo" : "Pausar vídeo"; }
+function play() { video.play().catch(syncToggle); }
+video.addEventListener("playing", syncToggle);
+video.addEventListener("pause", syncToggle);
+byId("motion-toggle").addEventListener("click", () => video.paused ? play() : video.pause());
+motion.addEventListener("change", () => { if (motion.matches) video.pause(); else play(); });
+if (!motion.matches) play();
+else syncToggle();

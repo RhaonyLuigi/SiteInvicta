@@ -1,0 +1,14 @@
+<!doctype html><html lang="pt-BR"><head><link rel="icon" href="/assets/app-icon.svg" type="image/svg+xml"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#1b6047"><title>Meus ingressos | Invicta</title><link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/assets/app-icon-192.png"><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/app.css"><script type="module" src="/client/account.js"></script></head>
+<body><a class="skip-link" href="#conteudo">Pular para o conteúdo</a><header class="site-header"><div class="wrap topbar"><a class="brand" href="/index.html">Invicta</a><nav aria-label="Principal"><a href="/index.html">Eventos</a><a href="/conta.html">Meus ingressos</a><a href="/admin.html">Organizar</a><a href="/validador.html">Portaria</a></nav></div></header>
+<main class="wrap section" id="conteudo">
+<div class="section-heading"><div><p class="eyebrow">Sua conta</p><h1>Meus ingressos</h1><p id="person" class="muted"></p></div><div id="account-actions" class="button-group"></div></div>
+<p class="notice" data-status role="status" hidden></p>
+<section id="login" class="card auth-card" hidden><h2>Entrar por e-mail</h2><p class="muted">Você recebe um link de acesso. O mesmo e-mail reúne seus ingressos e organizações.</p>
+<form id="login-form" class="stack"><label for="person-name">Seu nome</label><input id="person-name" name="name" autocomplete="name" required minlength="2" maxlength="80">
+<label for="email">E-mail</label><input id="email" name="email" type="email" autocomplete="email" required maxlength="254"><button class="button" type="submit">Receber link de acesso</button></form></section>
+<section id="account-settings" class="account-settings" hidden>
+<div class="card"><h2>Aplicativo</h2><p>Instale a Invicta e ative os avisos neste aparelho.</p><p class="field-help">No iPhone, as notificações ficam disponíveis ao instalar o app na Tela de Início.</p><div class="button-group" id="device-actions"></div></div>
+<div class="card"><h2>Avisos</h2><div id="notice-list" class="stack"></div><button id="read-notices" class="button button-secondary" type="button">Marcar como lidos</button></div>
+</section>
+<section id="wallet-section" class="section" hidden><h2>Pedidos e ingressos</h2><p class="field-help">Os ingressos são guardados neste dispositivo para consulta offline. Sair da conta apaga essa cópia.</p><div id="wallet" class="stack"></div></section>
+</main></body></html>

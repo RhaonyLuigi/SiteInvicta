@@ -1,88 +1,33 @@
-<!doctype html>
-<html lang="pt-BR">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Invicta | Painel de demonstração</title>
-    <link rel="stylesheet" href="styles.css">
-    <script type="module" src="admin.js"></script>
-</head>
-<body>
-    <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
-    <header class="site-header">
-        <div class="wrap topbar">
-            <a class="brand" href="index.html">INVICTA</a>
-            <a class="button button-secondary button-small" href="index.html">Voltar ao site</a>
-        </div>
-    </header>
-    <main id="conteudo" class="wrap section">
-        <p class="eyebrow">Demonstração interna</p>
-        <h1>Painel de eventos</h1>
-        <p class="muted">Gerencie eventos e lotes de teste. Os dados ficam neste navegador.</p>
-        <noscript><p class="notice">Ative o JavaScript para usar o painel de demonstração.</p></noscript>
-        <p id="admin-status" class="notice" role="status"></p>
-        <dl class="stats">
-            <div class="card"><dt>Receita simulada</dt><dd id="revenue">R$ 0,00</dd></div>
-            <div class="card"><dt>Ingressos emitidos</dt><dd id="sales">0</dd></div>
-            <div class="card"><dt>Entradas registradas</dt><dd id="entries">0</dd></div>
-        </dl>
-        <div class="admin-forms">
-            <form id="event-form" class="card stack">
-                <h2>Criar evento</h2>
-                <label for="event-name">Nome</label>
-                <input id="event-name" name="name" required maxlength="80">
-                <label for="starts-at">Data e hora local do evento</label>
-                <input id="starts-at" name="date" type="datetime-local" required>
-                <label for="place">Local</label>
-                <input id="place" name="place" required maxlength="100">
-                <label for="event-description">Descrição</label>
-                <textarea id="event-description" name="description" rows="2" maxlength="220"></textarea>
-                <button class="button" type="submit">Salvar evento de teste</button>
-            </form>
-            <form id="lot-form" class="card stack">
-                <h2>Adicionar lote</h2>
-                <label for="event-select">Evento</label>
-                <select id="event-select" name="eventId" required></select>
-                <label for="lot-name">Nome do lote</label>
-                <input id="lot-name" name="name" placeholder="Ex. 1º lote" required maxlength="40">
-                <label for="category">Categoria</label>
-                <input id="category" name="category" placeholder="Ex. Público Geral" required maxlength="60">
-                <div class="form-grid">
-                    <div class="stack">
-                        <label for="price">Preço em reais</label>
-                        <input id="price" name="price" type="number" inputmode="decimal" min="0.01" max="100000" step="0.01" required>
-                    </div>
-                    <div class="stack">
-                        <label for="capacity">Quantidade</label>
-                        <input id="capacity" name="capacity" type="number" min="1" max="100000" step="1" required>
-                    </div>
-                </div>
-                <label for="lot-description">O que está incluído</label>
-                <textarea id="lot-description" name="description" rows="2" maxlength="180"></textarea>
-                <button class="button" type="submit">Salvar lote de teste</button>
-            </form>
-        </div>
-
-        <section class="section" aria-labelledby="catalog-title">
-            <p class="eyebrow">Catálogo</p>
-            <h2 id="catalog-title">Eventos e lotes</h2>
-            <div id="admin-events" class="stack event-list"></div>
-            <template id="event-row">
-                <article class="card">
-                    <div class="row-heading">
-                        <div><h3></h3><p class="muted" data-event-meta></p></div>
-                        <a class="button button-secondary button-small">Ver página do evento</a>
-                    </div>
-                    <ul class="lot-list"></ul>
-                </article>
-            </template>
-            <template id="lot-row">
-                <li class="row-heading">
-                    <div><strong></strong><p class="muted"></p></div>
-                    <button class="button button-secondary button-small" type="button"></button>
-                </li>
-            </template>
-        </section>
-    </main>
-</body>
-</html>
+<!doctype html><html lang="pt-BR"><head><link rel="icon" href="/assets/app-icon.svg" type="image/svg+xml"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Organizar eventos | Invicta</title><link rel="manifest" href="/manifest.webmanifest"><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/app.css"><script type="module" src="/admin.js"></script></head><body><a class="skip-link" href="#conteudo">Pular para o conteúdo</a><header class="site-header"><div class="wrap topbar"><a class="brand" href="/index.html">Invicta</a><nav aria-label="Principal"><a href="/index.html">Eventos</a><a href="/conta.html">Meus ingressos</a><a href="/admin.html">Organizar</a><a href="/validador.html">Portaria</a></nav></div></header>
+<main class="wrap section wide" id="conteudo"><div class="section-heading"><div><p class="eyebrow">Organização</p><h1>Seus eventos</h1></div><a class="button button-secondary" href="/conta.html">Minha conta</a></div><p data-status class="notice" role="status" hidden></p>
+<section id="manage" hidden>
+<div class="organization-toolbar"><div class="stack"><label for="org-select">Organização</label><select id="org-select"></select></div><form id="org-form" class="input-row"><label for="org-name">Nova organização</label><input id="org-name" name="name" minlength="3" maxlength="100" required><button class="button button-secondary">Criar organização</button></form></div>
+<div id="manager-tools" hidden>
+<dl class="stats"><div class="card"><dt>Ingressos pagos</dt><dd id="sold">0</dd></div><div class="card"><dt>Receita bruta</dt><dd id="gross">R$ 0,00</dd></div><div class="card"><dt>Após taxas confirmadas</dt><dd id="net">R$ 0,00</dd></div></dl>
+<div class="card receiving"><div><h2>Recebimento</h2><p id="receiving-status" class="muted"></p><p id="commission-status" class="field-help"></p></div><div id="receiving-actions" class="button-group"></div></div>
+<div class="dashboard-grid">
+<section class="stack"><div class="section-heading"><h2>Evento</h2><button id="new-event" class="button button-secondary" type="button">Novo evento</button></div>
+<form id="event-form" class="card stack"><input type="hidden" name="id">
+<label for="event-name">Nome do evento</label><input id="event-name" name="name" required minlength="3" maxlength="120">
+<label for="description">Descrição</label><textarea id="description" name="description" rows="3" maxlength="4000"></textarea>
+<div class="form-grid"><div class="stack"><label for="starts-at">Início (UTC−03)</label><input id="starts-at" name="startsAt" type="datetime-local" required></div><div class="stack"><label for="ends-at">Fim (UTC−03)</label><input id="ends-at" name="endsAt" type="datetime-local" required></div></div>
+<label for="place">Local e endereço</label><input id="place" name="place" minlength="3" maxlength="240" required>
+<label for="capacity">Capacidade total</label><input id="capacity" name="capacity" type="number" min="1" max="1000000" step="1" required>
+<label for="cover-url">Endereço da capa</label><input id="cover-url" name="coverUrl" value="/assets/atmosfera-invicta.webp" required>
+<label for="refund-policy">Política de reembolso e contato do organizador</label><textarea id="refund-policy" name="refundPolicy" minlength="10" maxlength="2000" rows="3" required></textarea>
+<button class="button" type="submit">Salvar evento</button></form>
+</section>
+<section class="stack"><h2>Lote</h2>
+<form id="lot-form" class="card stack"><input type="hidden" name="id"><label for="event-select">Evento</label><select id="event-select" name="eventId" required></select>
+<label for="lot-name">Nome do lote</label><input id="lot-name" name="name" minlength="2" maxlength="80" required>
+<label for="category">Categoria</label><input id="category" name="category" minlength="2" maxlength="80" required>
+<label for="lot-description">O que está incluído</label><textarea id="lot-description" name="description" maxlength="1000"></textarea>
+<div class="form-grid"><div class="stack"><label for="price">Preço em reais</label><input id="price" name="price" type="number" min="0" max="100000" step="0.01" required></div><div class="stack"><label for="lot-capacity">Quantidade do lote</label><input id="lot-capacity" name="capacity" type="number" min="1" max="1000000" step="1" required></div></div>
+<div class="form-grid"><div class="stack"><label for="sales-start">Venda a partir de (UTC−03)</label><input id="sales-start" name="salesStart" type="datetime-local" required></div><div class="stack"><label for="sales-end">Até (UTC−03)</label><input id="sales-end" name="salesEnd" type="datetime-local" required></div></div>
+<label class="checkbox"><input name="closed" type="checkbox"> Encerrar este lote</label><button class="button" type="submit">Salvar lote</button><button id="new-lot" class="button button-secondary" type="button">Limpar formulário</button></form>
+</section></div>
+</div>
+<section class="section"><h2>Eventos e lotes</h2><div id="event-list" class="stack"></div></section>
+<section class="section" id="team-tools" hidden><h2>Equipe</h2><div id="team-list" class="stack"></div><form id="invite-form" class="card stack"><label for="invite-email">E-mail do convidado</label><input id="invite-email" name="email" type="email" required><label for="invite-role">Permissão</label><select id="invite-role" name="role"><option value="checkin">Portaria</option><option value="manager">Gestão de eventos</option></select><button class="button">Enviar convite</button></form></section>
+<section class="section" id="refund-tools" hidden><h2>Reembolsos</h2><div id="refund-list" class="stack"></div></section>
+</section></main></body></html>
