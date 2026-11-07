@@ -11,11 +11,19 @@ const actions = byId("payment-actions");
 const retry = byId("retry-payment");
 const issued = byId("issued-tickets");
 const validator = byId("open-validator");
+const purchaseBar = byId("mobile-purchase");
 const eventId = new URLSearchParams(location.search).get("evento") || "invicta";
 const dayFormat = new Intl.DateTimeFormat("pt-BR", { dateStyle: "long" });
 const timeFormat = new Intl.DateTimeFormat("pt-BR", { timeStyle: "short" });
 let selectedLot;
 let currentOrder;
+let heroVisible = true;
+let ticketsVisible = false;
+let hasAvailableTickets = false;
+
+function updatePurchaseBar() {
+    purchaseBar.hidden = heroVisible || ticketsVisible || !hasAvailableTickets || checkout.open;
+}
 
 function renderTickets(container, tickets) {
     container.replaceChildren();
@@ -38,17 +46,30 @@ function renderCatalog() {
         const event = state.events.find((item) => item.id === eventId);
         const lots = state.lots.filter((item) => item.eventId === eventId);
         const available = lots.filter((lot) => !lot.closed && availability(state, lot) > 0);
+        hasAvailableTickets = Boolean(event) && available.length > 0;
+        updatePurchaseBar();
         list.replaceChildren();
+        const showExperience = Boolean(event) && eventId === "invicta";
+        document.querySelector(".event-facts").hidden = !event;
+        byId("o-evento").hidden = !showExperience;
+        byId("hero-merch").hidden = !showExperience;
+        for (const link of document.querySelectorAll('[href="#o-evento"]')) {
+            link.hidden = !showExperience;
+        }
         if (!event) {
             byId("event-title").textContent = "Evento indisponível";
             byId("event-intro").textContent = "Abra a página inicial para ver o evento principal.";
-            document.querySelector(".event-facts").hidden = true;
-            byId("event-details").hidden = true;
             message.textContent = "Evento não encontrado neste navegador.";
             message.hidden = false;
             return;
         }
-        byId("event-title").textContent = event.name;
+        const title = byId("event-title");
+        title.textContent = event.name;
+        if (event.name === "A Maior da UCB") {
+            const accent = document.createElement("em");
+            accent.textContent = "da UCB";
+            title.replaceChildren(document.createTextNode("A Maior "), accent);
+        }
         byId("event-intro").textContent = event.description;
         const date = new Date(event.date);
         byId("event-when").dateTime = event.date;
@@ -62,7 +83,7 @@ function renderCatalog() {
             ? money(Math.min(...available.map((lot) => lot.price)))
             : "Indisponíveis";
         byId("event-price-note").hidden = available.length === 0;
-        byId("event-details").hidden = eventId !== "invicta";
+        byId("mobile-price").textContent = byId("event-price").textContent;
         message.textContent = "Este evento ainda não tem lotes cadastrados.";
         message.hidden = lots.length !== 0;
 
@@ -86,6 +107,8 @@ function renderCatalog() {
         byId("saved-tickets").hidden = savedTickets.length === 0;
         if (byId("saved-tickets").open) renderTickets(byId("saved-ticket-list"), savedTickets);
     } catch {
+        hasAvailableTickets = false;
+        updatePurchaseBar();
         message.textContent = "Não foi possível abrir os dados de demonstração neste navegador.";
         message.hidden = false;
     }
@@ -93,6 +116,8 @@ function renderCatalog() {
 
 function updateTotal() {
     byId("checkout-total").value = quantity.validity.valid ? money(quantity.valueAsNumber * selectedLot.price) : "—";
+    document.querySelector('[data-quantity-step="-1"]').disabled = quantity.valueAsNumber <= Number(quantity.min);
+    document.querySelector('[data-quantity-step="1"]').disabled = quantity.valueAsNumber >= Number(quantity.max);
 }
 
 function showOrder(message = "Pedido criado. Escolha o resultado do pagamento de teste.") {
@@ -119,6 +144,7 @@ function openCheckout(lot, remaining, state) {
         showOrder("Pedido pendente · " + currentOrder.quantity + " ingresso(s) · " + money(currentOrder.quantity * currentOrder.price));
     }
     if (!checkout.open) checkout.showModal();
+    updatePurchaseBar();
     (currentOrder ? byId("approve-payment") : quantity).focus();
 }
 
@@ -169,6 +195,12 @@ byId("retry-payment").addEventListener("click", () => {
     }
 });
 quantity.addEventListener("input", updateTotal);
+for (const button of document.querySelectorAll("[data-quantity-step]")) {
+    button.addEventListener("click", () => {
+        quantity.stepUp(Number(button.dataset.quantityStep));
+        updateTotal();
+    });
+}
 checkout.addEventListener("close", () => {
     if (checkout.open) return;
     renderCatalog();
@@ -183,6 +215,29 @@ window.addEventListener("storage", () => {
 });
 
 renderCatalog();
+
+const purchaseObserver = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+        if (entry.target.id === "hero") heroVisible = entry.isIntersecting;
+        else ticketsVisible = entry.isIntersecting;
+    }
+    updatePurchaseBar();
+});
+purchaseObserver.observe(byId("hero"));
+purchaseObserver.observe(byId("ingressos"));
+
+if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    const revealObserver = new IntersectionObserver((entries, observer) => {
+        for (const entry of entries) {
+            if (entry.isIntersecting) {
+                entry.target.classList.add("is-visible");
+                observer.unobserve(entry.target);
+            }
+        }
+    }, { threshold: 0.08 });
+    for (const element of document.querySelectorAll(".reveal")) revealObserver.observe(element);
+    document.documentElement.classList.add("motion-ready");
+}
 
 if (eventId === "invicta") {
     const videos = [...document.querySelectorAll("video[data-src]")];

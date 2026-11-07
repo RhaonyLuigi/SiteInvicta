@@ -3,16 +3,24 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Conheça os eventos da Atlética Invicta de Biologia da UCB e experimente a compra de ingressos.">
-    <title>Invicta | Ingressos da Atlética</title>
+    <meta name="theme-color" content="#133d31">
+    <meta name="description" content="Encontre sua galera nos eventos da Atlética Invicta de Biologia da UCB. Confira o evento e escolha seu ingresso.">
+    <title>Invicta | Sua próxima noite começa aqui</title>
+    <link rel="preload" as="image" href="assets/atmosfera-invicta.webp">
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="storefront.css">
     <script type="module" src="script.js"></script>
 </head>
-<body>
+<body class="storefront">
     <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
     <header class="site-header">
         <div class="wrap topbar">
-            <a class="brand" href="index.html">INVICTA</a>
+            <a class="brand" href="index.html" aria-label="Invicta, página inicial">INVICTA<span class="brand-caption">ATLÉTICA · BIOLOGIA UCB</span></a>
+            <nav class="desktop-nav" aria-label="Navegação principal">
+                <a href="#o-evento">O evento</a>
+                <a href="#ingressos">Ingressos</a>
+                <a href="#duvidas">Dúvidas</a>
+            </nav>
             <div class="topbar-actions">
                 <button class="button button-secondary button-small motion-toggle" id="motion-toggle" type="button"
                         aria-controls="hero-video event-video" aria-label="Reproduzir vídeos" hidden>
@@ -20,19 +28,36 @@
                     <svg class="motion-pause" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg>
                     <span id="motion-label">Reproduzir vídeos</span>
                 </button>
-                <a class="button button-small" href="#ingressos">Ver ingressos</a>
+                <a class="button button-small" href="#ingressos">Quero meu ingresso <span aria-hidden="true">↗</span></a>
             </div>
         </div>
     </header>
     <main id="conteudo">
         <section id="hero" class="hero" aria-labelledby="event-title">
-            <div class="hero-media" aria-hidden="true">
-                <video id="hero-video" muted loop playsinline preload="none" poster="hero-poster.webp" data-src="HeroCaneca-optimized.mp4"></video>
-            </div>
-            <div class="wrap hero-content">
-                <p class="eyebrow">Atlética Invicta · Biologia UCB</p>
-                <h1 id="event-title">A Maior da UCB</h1>
-                <p id="event-intro" class="hero-intro">O evento da Atlética Invicta de Biologia da UCB.</p>
+            <div class="wrap">
+                <div class="hero-layout">
+                    <div class="hero-copy">
+                        <p class="eyebrow"><span class="eyebrow-line" aria-hidden="true"></span> O próximo encontro da sua galera</p>
+                        <h1 id="event-title">A Maior da UCB</h1>
+                        <p id="event-intro" class="hero-intro">Uma noite para encontrar sua galera e viver a Invicta.</p>
+                        <div class="hero-actions">
+                            <a class="button button-large" href="#ingressos">Escolher meu ingresso <span aria-hidden="true">↗</span></a>
+                            <a class="text-link" href="#o-evento">Conhecer o evento <span aria-hidden="true">↓</span></a>
+                        </div>
+                        <p class="hero-note"><span aria-hidden="true">✦</span> Biologia UCB · Brasília · Atlética Invicta</p>
+                    </div>
+                    <figure class="hero-art">
+                        <img src="assets/atmosfera-invicta.webp" width="960" height="1200"
+                             alt="Ilustração do clima de uma festa, com luzes verdes e douradas sobre a galera."
+                             fetchpriority="high">
+                        <span class="art-label">Música. Encontros. Invicta.</span>
+                        <figcaption>Imagem ilustrativa</figcaption>
+                        <div class="merch-float" id="hero-merch">
+                            <video id="hero-video" muted loop playsinline preload="none" poster="hero-poster.webp" data-src="HeroCaneca-optimized.mp4" aria-hidden="true"></video>
+                            <span>O copo da Invicta <span aria-hidden="true">↗</span></span>
+                        </div>
+                    </figure>
+                </div>
                 <dl class="event-facts">
                     <div>
                         <dt><span class="event-fact-icon" aria-hidden="true">
@@ -60,15 +85,18 @@
                         <dd><span id="event-price">R$ 50,00</span><span class="event-fact-note" id="event-price-note">Preço inicial por pessoa</span></dd>
                     </div>
                 </dl>
-                <a class="button" href="#ingressos">Escolher ingresso <span aria-hidden="true">↓</span></a>
-                <p class="hero-demo">Projeto acadêmico · compra de demonstração</p>
             </div>
         </section>
 
-        <section id="ingressos" class="wrap section" aria-labelledby="tickets-title">
-            <p class="eyebrow">Bilheteria</p>
-            <h2 id="tickets-title" tabindex="-1">Garanta seu acesso</h2>
-            <p class="muted">Demonstração acadêmica. A compra é simulada e funciona neste navegador.</p>
+        <section id="ingressos" class="wrap section ticket-section" aria-labelledby="tickets-title">
+            <div class="section-heading reveal">
+                <div>
+                    <p class="eyebrow">Seu lugar na festa</p>
+                    <h2 id="tickets-title" tabindex="-1">A gente se encontra <em>lá.</em></h2>
+                </div>
+                <p class="section-intro">Escolha seu perfil, confira o que está incluído e garanta o seu ingresso.</p>
+            </div>
+            <p class="demo-note"><span aria-hidden="true">○</span> Projeto acadêmico · Você está experimentando uma compra de demonstração.</p>
             <noscript><p class="notice">Ative o JavaScript para experimentar o checkout.</p></noscript>
             <p id="catalog-message" class="notice" hidden></p>
             <div id="ticket-list" class="ticket-grid"></div>
@@ -78,27 +106,59 @@
             </details>
             <template id="lot-card">
                 <article class="card lot-card">
-                    <p class="eyebrow" data-lot-name></p>
+                    <div class="lot-heading">
+                        <p class="eyebrow" data-lot-name></p>
+                        <span class="ticket-symbol" aria-hidden="true">↗</span>
+                    </div>
                     <h3 data-lot-category></h3>
+                    <p class="lot-price-label">Seu ingresso por</p>
                     <p class="price" data-lot-price></p>
-                    <p class="muted" data-lot-availability></p>
+                    <p class="muted lot-unit">por pessoa</p>
+                    <div class="ticket-divider" aria-hidden="true"></div>
+                    <p class="lot-includes">O que te espera</p>
                     <p class="muted" data-lot-description></p>
+                    <p class="lot-availability" data-lot-availability></p>
                     <button class="button" type="button"></button>
                 </article>
             </template>
         </section>
 
-        <section class="wrap section event-details" id="event-details" aria-labelledby="details-title">
-            <div>
-                <p class="eyebrow">Sobre o evento</p>
-                <h2 id="details-title">Experiência absoluta</h2>
-                <div class="details-grid">
-                    <article class="card card-green"><h3>Open bar</h3><p>Durante toda a festa.</p></article>
-                    <article class="card"><h3>Lineup secreto</h3><p class="muted">Atrações reveladas em breve.</p></article>
+        <section class="wrap section" id="o-evento">
+            <div class="experience-panel reveal" id="event-details">
+                <div class="experience-copy">
+                    <p class="eyebrow">Muito além do ingresso</p>
+                    <h2 id="details-title">Da primeira música<br>ao último <em>brinde.</em></h2>
+                    <p class="muted">Junte a galera e venha curtir uma noite com a Atlética Invicta de Biologia da UCB.</p>
+                    <div class="experience-points">
+                        <article><span aria-hidden="true">01</span><div><h3>Open bar</h3><p>Durante toda a festa, conforme seu ingresso.</p></div></article>
+                        <article><span aria-hidden="true">02</span><div><h3>Lineup secreto</h3><p>As atrações serão reveladas em breve.</p></div></article>
+                    </div>
+                </div>
+                <div class="experience-media">
+                    <video id="event-video" class="event-video" data-src="Canecas-horizontal.mp4" poster="caneca-poster.webp"
+                           width="960" height="540" preload="none" muted loop playsinline aria-label="Vídeo da caneca Invicta"></video>
+                    <p><span class="eyebrow">Um detalhe para levar com você</span>Copo exclusivo incluído no ingresso Aluno UCB.</p>
                 </div>
             </div>
-            <video id="event-video" class="event-video" data-src="Canecas-horizontal.mp4" poster="caneca-poster.webp"
-                   width="960" height="540" preload="none" muted loop playsinline aria-label="Vídeo da caneca Invicta"></video>
+        </section>
+
+        <section class="wrap section faq-section" id="duvidas" aria-labelledby="faq-title">
+            <div class="reveal">
+                <p class="eyebrow">Antes de escolher</p>
+                <h2 id="faq-title">Ficou alguma<br> <em>dúvida?</em></h2>
+                <p class="muted">Os detalhes para você seguir com tranquilidade.</p>
+            </div>
+            <div class="faq-list">
+                <details><summary>Qual ingresso eu escolho?</summary><p>Confira a categoria e os itens incluídos no cartão de cada lote. No evento A Maior da UCB, as opções são Aluno UCB e Público Geral.</p></details>
+                <details><summary>Como recebo meu ingresso?</summary><p>Nesta demonstração, o ingresso com QR Code aparece após simular a aprovação do pagamento. Você pode encontrá-lo novamente em “Meus ingressos de teste”, usando este mesmo navegador.</p></details>
+                <details><summary>O pagamento é de verdade?</summary><p>Você está em um projeto acadêmico. O checkout permite experimentar a aprovação e a recusa de um pagamento com dados de demonstração.</p></details>
+                <details><summary>Como funciona a entrada?</summary><p>O validador de demonstração lê o QR Code ou o código digitado e registra a entrada. Uma nova tentativa com o mesmo ingresso informa que ele já foi utilizado. O teste funciona no navegador em que o ingresso foi emitido.</p></details>
+            </div>
+        </section>
+
+        <section class="wrap final-invite reveal" aria-labelledby="invite-title">
+            <div><p class="eyebrow">O próximo encontro é nosso</p><h2 id="invite-title">Chame a galera.<br>Escolha seu ingresso.</h2></div>
+            <a class="button button-large" href="#ingressos">Ver os ingressos <span aria-hidden="true">↗</span></a>
         </section>
     </main>
 
@@ -107,12 +167,17 @@
             <p class="eyebrow">Checkout de demonstração</p>
             <form method="dialog"><button class="button button-secondary button-small">Fechar</button></form>
         </div>
-        <h2 id="checkout-title">Seu pedido</h2>
+        <p class="checkout-progress">01 · Escolha <span aria-hidden="true">→</span> 02 · Confirmação</p>
+        <h2 id="checkout-title">Confira seu ingresso.</h2>
         <p id="checkout-lot" class="muted"></p>
         <form id="checkout-form" class="stack">
-            <label for="quantity">Quantidade</label>
-            <input id="quantity" type="number" min="1" max="5" value="1" step="1" required>
-            <p>Total <output id="checkout-total" class="checkout-total" for="quantity"></output></p>
+            <label for="quantity">Quantidade de ingressos</label>
+            <div class="quantity-selector">
+                <button class="quantity-step" type="button" data-quantity-step="-1" aria-label="Diminuir quantidade">−</button>
+                <input id="quantity" type="number" min="1" max="5" value="1" step="1" required>
+                <button class="quantity-step" type="button" data-quantity-step="1" aria-label="Aumentar quantidade">+</button>
+            </div>
+            <p class="checkout-summary">Total do pedido <output id="checkout-total" class="checkout-total" for="quantity"></output></p>
             <button class="button" type="submit">Criar pedido de teste</button>
         </form>
         <p id="checkout-status" class="notice" role="status"></p>
@@ -131,12 +196,16 @@
         </template>
     </dialog>
 
+    <aside class="mobile-purchase" id="mobile-purchase" aria-label="Acesso rápido aos ingressos" hidden>
+        <div><span>A partir de</span><strong id="mobile-price">R$ 50,00</strong></div>
+        <a class="button" href="#ingressos">Escolher ingresso <span aria-hidden="true">↗</span></a>
+    </aside>
     <footer class="site-footer">
         <div class="wrap footer-content">
-            <p>Atlética Invicta · Biologia UCB</p>
+            <div><a class="brand" href="index.html">INVICTA</a><p>Atlética de Biologia · UCB · Brasília</p></div>
             <nav aria-label="Demonstração interna">
-                <a href="admin.html">Painel de demonstração</a>
-                <a href="validador.html">Validador de demonstração</a>
+                <a href="admin.html">Painel do projeto</a>
+                <a href="validador.html">Validador</a>
             </nav>
         </div>
     </footer>

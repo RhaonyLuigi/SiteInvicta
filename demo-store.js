@@ -3,7 +3,7 @@ const storageKey = "invicta-demo-v1";
 const initialState = {
     events: [
         { id: "invicta", name: "A Maior da UCB", date: "2026-11-12T22:00", place: "Arena Hall · SCS, Brasília",
-            description: "O evento da Atlética Invicta de Biologia da UCB." },
+            description: "Uma noite para encontrar sua galera, curtir o open bar e viver a Invicta." },
         { id: "calourada", name: "Calourada", date: "2026-11-20T21:00", place: "Brasília",
             description: "Evento de exemplo para testar a seleção da portaria." }
     ],
