@@ -88,8 +88,10 @@ async function pay(f, value, paymentId = randomUUID()) {
 }
 
 test("login por e-mail é de uso único, cria sessão e preserva retorno", async () => {
+    await db.query("INSERT INTO jobs(kind,dedupe_key,payload) VALUES('email','older-email',$1)", [JSON.stringify({ email: "older@invicta.test", subject: "Aviso anterior", text: "Aviso na fila" })]);
     const response = await call("/auth/request", null, { name: "Pessoa nova", email: "new@invicta.test", returnTo: "/admin.html" });
     assert.equal(response.status, 200);
+    assert.equal(emails.some((mail) => mail.email === "older@invicta.test"), false);
     const mail = emails.find((item) => item.email === "new@invicta.test");
     const url = new URL(mail.text.match(/http[^\s]+/)[0]);
     assert.equal(url.searchParams.get("voltar"), "/admin.html");

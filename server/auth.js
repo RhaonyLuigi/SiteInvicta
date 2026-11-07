@@ -22,7 +22,8 @@ export function authRouter(db, config, delivery) {
         await db.query("INSERT INTO login_links(token_hash,email,name,expires_at) VALUES($1,$2,$3,now()+interval '15 minutes')", [hash(secret), email, name]);
         await job(db, "email", "login:" + hash(secret), { email, subject: "Seu acesso à Invicta",
             text: "Abra este link para entrar. Ele vale por 15 minutos e pode ser usado uma vez.\n\n" + link.href + "#acesso=" + secret });
-        await delivery.run(1);
+        const delivered = await delivery.run(1, Infinity, "login:" + hash(secret));
+        requireValue(delivered, 503, "Não foi possível enviar o link agora. Tente novamente em instantes.");
         res.json({ message: "Enviamos o link de acesso para seu e-mail. Confira também a caixa de spam." });
     });
     router.post("/verify", async (req, res) => {

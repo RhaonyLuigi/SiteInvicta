@@ -26,5 +26,5 @@ export async function tasks(db, config, provider, store, delivery) {
             } catch (error) { console.error("[Conciliação]", order.id, error.message); }
         }
     }
-    return { reconciled, processed: await delivery.run(10, Math.max(0, 50000 - (Date.now() - started))) };
+    return { reconciled, processed: await delivery.run(100, Math.max(0, 50000 - (Date.now() - started))) };
 }

@@ -70,7 +70,7 @@ export function notifications(db, config, paymentProvider, sendEmail) {
         });
     }
 
-    async function run(limit = 20, budget = Infinity) {
+    async function run(limit = 20, budget = Infinity, onlyKey = null) {
         const started = Date.now();
         let completed = 0;
         for (let index = 0; index < limit; index++) {
@@ -78,9 +78,10 @@ export function notifications(db, config, paymentProvider, sendEmail) {
             const { rows: [item] } = await db.query(`
                 UPDATE jobs SET status='running',attempts=attempts+1,lease_until=now()+interval '2 minutes'
                 WHERE id=(SELECT id FROM jobs WHERE
-                    (status='queued' AND next_at<=now()) OR (status='running' AND lease_until<now())
+                    ((status='queued' AND next_at<=now()) OR (status='running' AND lease_until<now()))
+                    AND ($1::text IS NULL OR dedupe_key=$1)
                     ORDER BY created_at LIMIT 1 FOR UPDATE SKIP LOCKED)
-                RETURNING *`);
+                RETURNING *`, [onlyKey]);
             if (!item) break;
             try {
                 if (item.kind === "email") await mail(item.payload, item.id);
