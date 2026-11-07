@@ -7,6 +7,7 @@
     <meta name="description" content="Encontre sua galera nos eventos da Atlética Invicta de Biologia da UCB. Confira o evento e escolha seu ingresso.">
     <title>Invicta | Sua próxima noite começa aqui</title>
     <link rel="preload" as="image" href="assets/atmosfera-invicta.webp">
+    <link rel="preload" href="assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="storefront.css">
     <script type="module" src="script.js"></script>
@@ -28,7 +29,7 @@
                     <svg class="motion-pause" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg>
                     <span id="motion-label">Reproduzir vídeos</span>
                 </button>
-                <a class="button button-small" href="#ingressos">Quero meu ingresso <span aria-hidden="true">↗</span></a>
+                <a class="button button-small" href="#ingressos">Ingressos <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#arrow-up-right"></use></svg></a>
             </div>
         </div>
     </header>
@@ -41,11 +42,38 @@
                         <h1 id="event-title">A Maior da UCB</h1>
                         <p id="event-intro" class="hero-intro">Uma noite para encontrar sua galera e viver a Invicta.</p>
                         <div class="hero-actions">
-                            <a class="button button-large" href="#ingressos">Escolher meu ingresso <span aria-hidden="true">↗</span></a>
-                            <a class="text-link" href="#o-evento">Conhecer o evento <span aria-hidden="true">↓</span></a>
+                            <a class="button button-large" href="#ingressos">Escolher meu ingresso <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#arrow-up-right"></use></svg></a>
+                            <a class="text-link" href="#o-evento">Conhecer o evento <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#arrow-down"></use></svg></a>
                         </div>
-                        <p class="hero-note"><span aria-hidden="true">✦</span> Biologia UCB · Brasília · Atlética Invicta</p>
+                        <p class="hero-note"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#sparkle"></use></svg> Biologia UCB · Brasília · Atlética Invicta</p>
                     </div>
+                    <dl class="event-facts">
+                        <div>
+                            <dt><span class="event-fact-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+                                    <rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18"/>
+                                </svg>
+                            </span>Data e horário</dt>
+                            <dd><time id="event-when" datetime="2026-11-12T22:00"><span id="event-date">12 de novembro de 2026</span>
+                                <span class="event-fact-note" id="event-time">22:00</span></time></dd>
+                        </div>
+                        <div>
+                            <dt><span class="event-fact-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round">
+                                    <path d="M20 10c0 6-8 11-8 11S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/>
+                                </svg>
+                            </span>Local</dt>
+                            <dd><span id="event-place">Arena Hall</span><span class="event-fact-note" id="event-address">SCS, Brasília</span></dd>
+                        </div>
+                        <div>
+                            <dt><span class="event-fact-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 6h18v4a2 2 0 0 0 0 4v4H3v-4a2 2 0 0 0 0-4zM15 9v1m0 4v1"/>
+                                </svg>
+                            </span>Ingressos</dt>
+                            <dd><span id="event-price">R$ 50,00</span><span class="event-fact-note" id="event-price-note">Preço inicial</span></dd>
+                        </div>
+                    </dl>
                     <figure class="hero-art">
                         <img src="assets/atmosfera-invicta.webp" width="960" height="1200"
                              alt="Ilustração do clima de uma festa, com luzes verdes e douradas sobre a galera."
@@ -54,37 +82,10 @@
                         <figcaption>Imagem ilustrativa</figcaption>
                         <div class="merch-float" id="hero-merch">
                             <video id="hero-video" muted loop playsinline preload="none" poster="hero-poster.webp" data-src="HeroCaneca-optimized.mp4" aria-hidden="true"></video>
-                            <span>O copo da Invicta <span aria-hidden="true">↗</span></span>
+                            <span>O copo da Invicta <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#arrow-up-right"></use></svg></span>
                         </div>
                     </figure>
                 </div>
-                <dl class="event-facts">
-                    <div>
-                        <dt><span class="event-fact-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
-                                <rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18"/>
-                            </svg>
-                        </span>Data e horário</dt>
-                        <dd><time id="event-when" datetime="2026-11-12T22:00"><span id="event-date">12 de novembro de 2026</span>
-                            <span class="event-fact-note" id="event-time">22:00</span></time></dd>
-                    </div>
-                    <div>
-                        <dt><span class="event-fact-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round">
-                                <path d="M20 10c0 6-8 11-8 11S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/>
-                            </svg>
-                        </span>Local</dt>
-                        <dd><span id="event-place">Arena Hall</span><span class="event-fact-note" id="event-address">SCS, Brasília</span></dd>
-                    </div>
-                    <div>
-                        <dt><span class="event-fact-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M3 6h18v4a2 2 0 0 0 0 4v4H3v-4a2 2 0 0 0 0-4zM15 9v1m0 4v1"/>
-                            </svg>
-                        </span>Ingressos</dt>
-                        <dd><span id="event-price">R$ 50,00</span><span class="event-fact-note" id="event-price-note">Preço inicial por pessoa</span></dd>
-                    </div>
-                </dl>
             </div>
         </section>
 
@@ -96,7 +97,7 @@
                 </div>
                 <p class="section-intro">Escolha seu perfil, confira o que está incluído e garanta o seu ingresso.</p>
             </div>
-            <p class="demo-note"><span aria-hidden="true">○</span> Projeto acadêmico · Você está experimentando uma compra de demonstração.</p>
+            <p class="demo-note"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#info"></use></svg> Projeto acadêmico · Você está experimentando uma compra de demonstração.</p>
             <noscript><p class="notice">Ative o JavaScript para experimentar o checkout.</p></noscript>
             <p id="catalog-message" class="notice" hidden></p>
             <div id="ticket-list" class="ticket-grid"></div>
@@ -108,7 +109,7 @@
                 <article class="card lot-card">
                     <div class="lot-heading">
                         <p class="eyebrow" data-lot-name></p>
-                        <span class="ticket-symbol" aria-hidden="true">↗</span>
+                        <span class="ticket-symbol"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#ticket"></use></svg></span>
                     </div>
                     <h3 data-lot-category></h3>
                     <p class="lot-price-label">Seu ingresso por</p>
@@ -127,7 +128,7 @@
             <div class="experience-panel reveal" id="event-details">
                 <div class="experience-copy">
                     <p class="eyebrow">Muito além do ingresso</p>
-                    <h2 id="details-title">Da primeira música<br>ao último <em>brinde.</em></h2>
+                    <h2 id="details-title">Da primeira música ao último <em>brinde.</em></h2>
                     <p class="muted">Junte a galera e venha curtir uma noite com a Atlética Invicta de Biologia da UCB.</p>
                     <div class="experience-points">
                         <article><span aria-hidden="true">01</span><div><h3>Open bar</h3><p>Durante toda a festa, conforme seu ingresso.</p></div></article>
@@ -145,20 +146,20 @@
         <section class="wrap section faq-section" id="duvidas" aria-labelledby="faq-title">
             <div class="reveal">
                 <p class="eyebrow">Antes de escolher</p>
-                <h2 id="faq-title">Ficou alguma<br> <em>dúvida?</em></h2>
+                <h2 id="faq-title">Ficou alguma <em>dúvida?</em></h2>
                 <p class="muted">Os detalhes para você seguir com tranquilidade.</p>
             </div>
             <div class="faq-list">
-                <details><summary>Qual ingresso eu escolho?</summary><p>Confira a categoria e os itens incluídos no cartão de cada lote. No evento A Maior da UCB, as opções são Aluno UCB e Público Geral.</p></details>
-                <details><summary>Como recebo meu ingresso?</summary><p>Nesta demonstração, o ingresso com QR Code aparece após simular a aprovação do pagamento. Você pode encontrá-lo novamente em “Meus ingressos de teste”, usando este mesmo navegador.</p></details>
-                <details><summary>O pagamento é de verdade?</summary><p>Você está em um projeto acadêmico. O checkout permite experimentar a aprovação e a recusa de um pagamento com dados de demonstração.</p></details>
-                <details><summary>Como funciona a entrada?</summary><p>O validador de demonstração lê o QR Code ou o código digitado e registra a entrada. Uma nova tentativa com o mesmo ingresso informa que ele já foi utilizado. O teste funciona no navegador em que o ingresso foi emitido.</p></details>
+                <details><summary>Qual ingresso eu escolho?<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#chevron-down"></use></svg></summary><p>Confira a categoria e os itens incluídos no cartão de cada lote. No evento A Maior da UCB, as opções são Aluno UCB e Público Geral.</p></details>
+                <details><summary>Como recebo meu ingresso?<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#chevron-down"></use></svg></summary><p>Nesta demonstração, o ingresso com QR Code aparece após simular a aprovação do pagamento. Você pode encontrá-lo novamente em “Meus ingressos de teste”, usando este mesmo navegador.</p></details>
+                <details><summary>O pagamento é de verdade?<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#chevron-down"></use></svg></summary><p>Você está em um projeto acadêmico. O checkout permite experimentar a aprovação e a recusa de um pagamento com dados de demonstração.</p></details>
+                <details><summary>Como funciona a entrada?<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#chevron-down"></use></svg></summary><p>O validador de demonstração lê o QR Code ou o código digitado e registra a entrada. Uma nova tentativa com o mesmo ingresso informa que ele já foi utilizado. O teste funciona no navegador em que o ingresso foi emitido.</p></details>
             </div>
         </section>
 
         <section class="wrap final-invite reveal" aria-labelledby="invite-title">
-            <div><p class="eyebrow">O próximo encontro é nosso</p><h2 id="invite-title">Chame a galera.<br>Escolha seu ingresso.</h2></div>
-            <a class="button button-large" href="#ingressos">Ver os ingressos <span aria-hidden="true">↗</span></a>
+            <div><p class="eyebrow">O próximo encontro é nosso</p><h2 id="invite-title">Chame a galera. Escolha seu ingresso.</h2></div>
+            <a class="button button-large" href="#ingressos">Ver os ingressos <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#arrow-up-right"></use></svg></a>
         </section>
     </main>
 
@@ -167,16 +168,21 @@
             <p class="eyebrow">Checkout de demonstração</p>
             <form method="dialog"><button class="button button-secondary button-small">Fechar</button></form>
         </div>
-        <p class="checkout-progress">01 · Escolha <span aria-hidden="true">→</span> 02 · Confirmação</p>
+        <ol class="checkout-progress" aria-label="Etapas do pedido">
+            <li data-checkout-step="review" aria-current="step"><span>1</span> Escolha</li>
+            <li data-checkout-step="confirmation"><span>2</span> Confirmação</li>
+        </ol>
         <h2 id="checkout-title">Confira seu ingresso.</h2>
         <p id="checkout-lot" class="muted"></p>
-        <form id="checkout-form" class="stack">
+        <form id="checkout-form" class="stack" novalidate>
             <label for="quantity">Quantidade de ingressos</label>
             <div class="quantity-selector">
                 <button class="quantity-step" type="button" data-quantity-step="-1" aria-label="Diminuir quantidade">−</button>
-                <input id="quantity" type="number" min="1" max="5" value="1" step="1" required>
+                <input id="quantity" type="number" min="1" max="5" value="1" step="1" aria-describedby="quantity-help quantity-error" required>
                 <button class="quantity-step" type="button" data-quantity-step="1" aria-label="Aumentar quantidade">+</button>
             </div>
+            <p id="quantity-help" class="field-help">Escolha entre 1 e 5 ingressos.</p>
+            <p id="quantity-error" class="field-error" role="alert" hidden></p>
             <p class="checkout-summary">Total do pedido <output id="checkout-total" class="checkout-total" for="quantity"></output></p>
             <button class="button" type="submit">Criar pedido de teste</button>
         </form>
@@ -198,7 +204,7 @@
 
     <aside class="mobile-purchase" id="mobile-purchase" aria-label="Acesso rápido aos ingressos" hidden>
         <div><span>A partir de</span><strong id="mobile-price">R$ 50,00</strong></div>
-        <a class="button" href="#ingressos">Escolher ingresso <span aria-hidden="true">↗</span></a>
+        <a class="button" href="#ingressos">Escolher ingresso <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#arrow-up-right"></use></svg></a>
     </aside>
     <footer class="site-footer">
         <div class="wrap footer-content">

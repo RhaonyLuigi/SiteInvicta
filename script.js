@@ -93,7 +93,7 @@ function renderCatalog() {
             const button = card.querySelector("button");
             card.querySelector("[data-lot-name]").textContent = lot.name;
             card.querySelector("[data-lot-category]").textContent = lot.category;
-            card.querySelector("[data-lot-price]").textContent = money(lot.price);
+            card.querySelector("[data-lot-price]").textContent = money(lot.price).replace(/\u00a0/g, " ");
             card.querySelector("[data-lot-description]").textContent = lot.description;
             card.querySelector("[data-lot-availability]").textContent = lot.closed ? "Lote encerrado" : remaining + " disponíveis";
             button.textContent = lot.closed ? "Lote encerrado" : remaining ? "Comprar " + lot.category : "Esgotado";
@@ -118,9 +118,27 @@ function updateTotal() {
     byId("checkout-total").value = quantity.validity.valid ? money(quantity.valueAsNumber * selectedLot.price) : "—";
     document.querySelector('[data-quantity-step="-1"]').disabled = quantity.valueAsNumber <= Number(quantity.min);
     document.querySelector('[data-quantity-step="1"]').disabled = quantity.valueAsNumber >= Number(quantity.max);
+    if (quantity.getAttribute("aria-invalid") === "true") validateQuantity();
+}
+
+function validateQuantity() {
+    const valid = quantity.validity.valid;
+    const error = byId("quantity-error");
+    quantity.setAttribute("aria-invalid", String(!valid));
+    error.textContent = valid ? "" : "Escolha uma quantidade inteira de 1 a " + quantity.max + ".";
+    error.hidden = valid;
+    return valid;
+}
+
+function setCheckoutStep(step) {
+    for (const item of document.querySelectorAll("[data-checkout-step]")) {
+        if (item.dataset.checkoutStep === step) item.setAttribute("aria-current", "step");
+        else item.removeAttribute("aria-current");
+    }
 }
 
 function showOrder(message = "Pedido criado. Escolha o resultado do pagamento de teste.") {
+    setCheckoutStep("confirmation");
     form.hidden = true;
     actions.hidden = false;
     retry.hidden = true;
@@ -133,6 +151,13 @@ function openCheckout(lot, remaining, state) {
     byId("checkout-lot").textContent = lot.name + " · " + lot.category + " · " + money(lot.price) + " por ingresso";
     quantity.max = Math.min(5, remaining);
     quantity.value = 1;
+    quantity.removeAttribute("aria-invalid");
+    byId("quantity-error").hidden = true;
+    byId("quantity-error").textContent = "";
+    byId("quantity-help").textContent = Number(quantity.max) === 1
+        ? "Há 1 ingresso disponível neste lote."
+        : "Escolha entre 1 e " + quantity.max + " ingressos.";
+    setCheckoutStep("review");
     updateTotal();
     form.hidden = false;
     status.textContent = "";
@@ -150,6 +175,10 @@ function openCheckout(lot, remaining, state) {
 
 form.addEventListener("submit", (event) => {
     event.preventDefault();
+    if (!validateQuantity()) {
+        quantity.focus();
+        return;
+    }
     try {
         currentOrder = createOrder(eventId, selectedLot.id, quantity.valueAsNumber);
         showOrder("Pagamento de teste pendente · " + money(currentOrder.quantity * currentOrder.price));
@@ -195,6 +224,7 @@ byId("retry-payment").addEventListener("click", () => {
     }
 });
 quantity.addEventListener("input", updateTotal);
+quantity.addEventListener("blur", validateQuantity);
 for (const button of document.querySelectorAll("[data-quantity-step]")) {
     button.addEventListener("click", () => {
         quantity.stepUp(Number(button.dataset.quantityStep));

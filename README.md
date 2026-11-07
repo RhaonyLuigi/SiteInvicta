@@ -17,6 +17,14 @@ Com o Python instalado, execute `python -m http.server 8000 --bind 127.0.0.1` na
 
 O módulo `demo-store.js` centraliza os dados simulados. Na integração com o back-end, o servidor passa a definir preços e estoque, confirmar pagamentos, emitir ingressos e registrar as entradas.
 
+## Direção visual
+
+O site aplica as orientações do [UI UX Pro Max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/tree/4f2dbb67e64969a9a30ab00742f2d55d66ddec2b), com as consultas `event ticketing welcoming vibrant`, `Inter Poster`, `focus not obscured` e `inline validation checkout`.
+
+A direção Vibrant & Block-based foi adaptada aos verdes e tons claros da Invicta. As fontes Inter e Playfair Display são servidas pelo próprio site. As cores, estados e tempos de interação usam os mesmos tokens na página pública, no painel e no validador.
+
+As licenças das fontes estão em `assets/fonts/`.
+
 ## Bibliotecas de QR Code
 
 - [QR Code Generator 2.0.4](https://github.com/kazuhikoarase/qrcode-generator), licença MIT.
