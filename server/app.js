@@ -116,7 +116,7 @@ export function createApp({ db, config, provider, sendEmail }) {
         requireValue(order, 404, "Pedido não encontrado.");
         requireValue(order.status === "pending" && new Date(order.expires_at) > new Date(), 409, "A reserva deste pedido encerrou. Escolha um novo ingresso.");
         if (config.paymentProvider === "mock") return res.json({ local: true, orderId: id });
-        if (order.checkout_url) return res.json({ url: order.checkout_url });
+        if (order.checkout_url && !new URL(order.checkout_url).hostname.startsWith("sandbox.")) return res.json({ url: order.checkout_url });
         const { rows: [claimed] } = await db.query(
             "UPDATE orders SET checkout_lease_until=now()+interval '25 seconds' WHERE id=$1 AND (checkout_lease_until IS NULL OR checkout_lease_until<now()) RETURNING id", [id]
         );

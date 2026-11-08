@@ -265,14 +265,18 @@ test("adaptador Mercado Pago envia comissão e total ao checkout", async () => {
     await db.query("UPDATE organizations SET mp_access_token=$2,mp_refresh_token=$3,mp_expires_at=now()+interval '1 day' WHERE id=$1", [f.org.id, seal("test-access", config), seal("test-refresh", config)]);
     let payload;
     const gateway = payments(db, config, async (url, options) => {
+        if (url.endsWith("/users/me")) return new Response(JSON.stringify({ tags: ["test_user"] }));
         payload = JSON.parse(options.body);
-        return new Response(JSON.stringify({ id: "preference", sandbox_init_point: "https://sandbox.mercadopago.com.br/checkout/test" }), { status: 200 });
+        return new Response(JSON.stringify({ id: "preference", init_point: "https://www.mercadopago.com.br/checkout/test", sandbox_init_point: "https://sandbox.mercadopago.com.br/checkout/test" }), { status: 200 });
     });
     const result = await gateway.checkout(purchase, f.event, f.org);
     assert.equal(result.id, "preference");
+    assert.equal(result.url, "https://www.mercadopago.com.br/checkout/test");
     assert.equal(payload.items[0].unit_price, 50);
     assert.equal(payload.marketplace_fee, 2.5);
     assert.equal(payload.external_reference, purchase.id);
+    const realSeller = payments(db, config, async () => new Response(JSON.stringify({ tags: ["normal"] })));
+    await assert.rejects(() => realSeller.checkout(purchase, f.event, f.org), /vendedor de teste/);
 });
 test("Web Push rejeita destinos arbitrários e jobs requerem segredo", async () => {
     assert.equal((await call("/push", buyer, { endpoint: "https://127.0.0.1/secret", keys: { p256dh: "a".repeat(70), auth: "b".repeat(24) } })).status, 400);

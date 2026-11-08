@@ -23,7 +23,7 @@ O adaptador usa **Checkout Pro pela API de preferências**, com `marketplace_fee
 - Configure `MERCADOPAGO_CLIENT_ID`, `MERCADOPAGO_CLIENT_SECRET` e o segredo de assinatura em `MERCADOPAGO_WEBHOOK_SECRET`.
 - Habilite notificações de **pagamentos**. A preferência envia `notification_url=https://seu-dominio/api/webhooks/mercadopago?org=<UUID da organização>`; preserve o parâmetro `org`. Se usar o simulador do painel, inclua um pagamento real de teste dessa organização e esse parâmetro.
 - Use contas de teste distintas para integrador, vendedor e comprador, com os requisitos de OAuth e split do provedor. Conecte o vendedor pelo próprio painel da Invicta.
-- `MERCADOPAGO_ENV=sandbox` escolhe `sandbox_init_point` e recusa webhook com `live_mode=true`. Produção exige o ambiente correspondente. Não misture contas, tokens e assinaturas.
+- `MERCADOPAGO_ENV=sandbox` verifica que o recebedor é um usuário de teste e usa `init_point`, conforme o fluxo de contas de teste do Checkout Pro. O webhook recusa `live_mode=true`. Produção exige o ambiente correspondente. Não misture contas, tokens e assinaturas.
 - O checkout limita a uma parcela e exclui boleto. O provedor decide quais meios estão disponíveis para o recebedor. Nenhum dado de cartão passa pela API Invicta.
 - A aprovação depende de assinatura HMAC, consulta independente do pagamento e correspondência de organização, conta, ambiente, valor e BRL. Parâmetros recebidos no retorno do checkout não aprovam o pedido.
 

@@ -50,6 +50,12 @@ export function payments(db, config, request = fetch) {
         },
         async checkout(order, event, org) {
             const accessToken = await access(org.id);
+            if (!config.mpProduction) {
+                const seller = await api("/users/me", accessToken, null, "GET");
+                if (!Array.isArray(seller.tags) || !seller.tags.includes("test_user")) {
+                    throw new HttpError(409, "O modo de teste exige uma conta de vendedor de teste. Reconecte o Mercado Pago pelo painel.");
+                }
+            }
             const result = await api("/checkout/preferences", accessToken, {
                 items: [{ id: order.id, title: event.name, quantity: 1, unit_price: order.total_cents / 100, currency_id: "BRL" }],
                 external_reference: order.id,
@@ -65,7 +71,9 @@ export function payments(db, config, request = fetch) {
                 expiration_date_to: new Date(order.expires_at).toISOString(),
                 payment_methods: { installments: 1, excluded_payment_types: [{ id: "ticket" }] }
             }, "POST", order.id);
-            const checkoutUrl = config.mpProduction ? result.init_point : result.sandbox_init_point;
+            // Contas de teste usam o checkout init_point; o recebedor de teste
+            // é conferido acima e o webhook continua exigindo live_mode=false.
+            const checkoutUrl = result.init_point;
             if (!checkoutUrl || !/^https:\/\/([a-z0-9-]+\.)*(mercadopago\.com(\.br)?|mercadopago\.com\.ar)\//i.test(checkoutUrl)) {
                 throw new HttpError(502, "O provedor retornou um endereço de checkout inválido.");
             }
