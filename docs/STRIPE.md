@@ -64,6 +64,8 @@ Contas conectadas de teste não se convertem em contas reais. A ligação de rec
 
 ## Operação e limites
 
+A migração 004 arquiva os dados da integração desativada em `integration_archive` na mesma transação, antes de retirar as colunas e a tabela antigas. O arquivo preserva pedidos, identificadores e credenciais já criptografadas, sem rotas de acesso pela aplicação; o acesso de PUBLIC ao schema é revogado. Inclua esse schema nos backups e aplique a política de retenção da operação. A chave ENCRYPTION_KEY continua necessária para os ingressos e deve ser preservada.
+
 - A reserva Stripe dura 30 minutos. O Pix é criado com validade de 30 minutos a partir de sua confirmação; o código pode continuar válido no banco depois que a reserva acabar. Um pagamento tardio só emite ingresso se ainda houver capacidade. Caso contrário, inicia estorno, sem vender acima do estoque.
 - A sessão segura do provedor expira 30 minutos após o fim da reserva, para atender ao prazo mínimo da Stripe mesmo quando o comprador abre o formulário mais tarde. Isso não prolonga o bloqueio de estoque. Ao encerrar a reserva, a Invicta fecha o formulário; a conferência transacional do servidor continua valendo em qualquer confirmação posterior.
 - Pix e cartão têm sessões distintas, reutilizadas com idempotência. Se alguém pagar as duas, o segundo pagamento é encaminhado a estorno. Não emita ingresso pela resposta do navegador.
