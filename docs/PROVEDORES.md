@@ -1,3 +1,5 @@
+> Atualização: o checkout no aplicativo com Pix e carteiras digitais usa Stripe Connect. Siga [STRIPE.md](STRIPE.md) para ativar. As instruções Mercado Pago abaixo continuam válidas para o provedor anterior.
+
 # Banco e pagamentos
 
 Consulta às páginas oficiais em 7 de novembro de 2026. Tarifas, limites, elegibilidade e condições de liquidação devem ser confirmados na conta antes de vender.

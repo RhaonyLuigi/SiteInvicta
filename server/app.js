@@ -5,6 +5,7 @@ import { authRouter, identify, authenticated } from "./auth.js";
 import { organizerRouter } from "./organizers.js";
 import { commerce, member } from "./commerce.js";
 import { payments, verifyWebhook } from "./payments.js";
+import { stripePayments } from "./stripe.js";
 import { notifications, notify, job } from "./notifications.js";
 import { tasks } from "./tasks.js";
 import { requireValue, HttpError, hash, token, seal } from "./security.js";
@@ -17,7 +18,7 @@ export function createApp({ db, config, provider, sendEmail }) {
     const ready = Boolean(db) && /^[a-f0-9]{64}$/i.test(config.encryptionKey);
     app.disable("x-powered-by");
     app.set("trust proxy", 1);
-    app.use(express.json({ limit: "32kb" }));
+    app.use(express.json({ limit: "256kb", verify(req, res, bytes) { if (req.originalUrl.split("?")[0] === "/api/webhooks/stripe") req.rawBody = bytes; } }));
     app.use("/api", (req, res, next) => {
         res.set({ "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer" });
         if (!["GET", "HEAD", "OPTIONS"].includes(req.method)
@@ -26,9 +27,17 @@ export function createApp({ db, config, provider, sendEmail }) {
         }
         next();
     });
-    const paymentProvider = provider || (config.paymentProvider === "mock" ? {
-        refund: async () => ({ status: "refunded" })
-    } : payments(db, config));
+    const stripe = stripePayments(db, config);
+    const adapters = { mercadopago: payments(db, config), stripe, mock: { refund: async () => ({ status: "refunded" }) } };
+    const adapter = (name) => provider || adapters[name];
+    const paymentProvider = {
+        async refund(orgId, id, key, orderId) {
+            const { rows: [order] } = await db.query("SELECT payment_provider FROM orders WHERE id=$1", [orderId]);
+            requireValue(order, 404, "Pedido não encontrado.");
+            return adapter(order.payment_provider).refund(orgId, id, key);
+        },
+        search: (orgId, orderId, name) => adapter(name || config.paymentProvider).search(orgId, orderId)
+    };
     const store = db ? commerce(db, config) : null;
     const delivery = db ? notifications(db, config, paymentProvider, sendEmail) : null;
 
@@ -37,6 +46,7 @@ export function createApp({ db, config, provider, sendEmail }) {
         emailReady: !config.production || Boolean(config.resendKey && config.emailFrom),
         pushReady: Boolean(config.vapidPublic && config.vapidPrivate && config.vapidSubject),
         vapidPublicKey: config.vapidPublic,
+        reservationMinutes: config.paymentProvider === "stripe" ? 30 : 15,
         message: ready ? "" : "A plataforma está sendo configurada. As vendas serão abertas após a conexão do banco."
     }));
     app.use("/api", async (req, res, next) => {
@@ -61,9 +71,9 @@ export function createApp({ db, config, provider, sendEmail }) {
         const { rows: events } = await db.query(`
             SELECT e.*,o.name AS organizer,
                 COALESCE(o.fee_bps,$1::int) AS fee_bps,o.fee_mode,
-                (o.mp_access_token IS NOT NULL) AS connected
+                (CASE WHEN $2::text='stripe' THEN o.stripe_ready ELSE o.mp_access_token IS NOT NULL END) AS connected
             FROM events e JOIN organizations o ON o.id=e.org_id
-            WHERE e.status<>'draft' AND ${filter} ORDER BY e.starts_at LIMIT 100`, [config.feeBps, ...values]);
+            WHERE e.status<>'draft' AND ${filter} ORDER BY e.starts_at LIMIT 100`, [config.feeBps, config.paymentProvider, ...values]);
         if (!events.length) return [];
         const { rows: lots } = await db.query(`
             SELECT l.*,GREATEST(0,LEAST(l.capacity-
@@ -84,12 +94,12 @@ export function createApp({ db, config, provider, sendEmail }) {
     }
     app.get("/api/events", async (req, res) => {
         const query = typeof req.query.q === "string" ? req.query.q.slice(0, 100) : "";
-        const events = await catalog("e.status IN ('published','closed') AND e.ends_at>now() AND (e.name ILIKE $2 OR e.place ILIKE $2)", ["%" + query + "%"]);
+        const events = await catalog("e.status IN ('published','closed') AND e.ends_at>now() AND (e.name ILIKE $3 OR e.place ILIKE $3)", ["%" + query + "%"]);
         res.json({ events });
     });
     app.get("/api/events/:id", async (req, res) => {
         const id = z.string().max(120).parse(req.params.id);
-        const [event] = await catalog("(e.id::text=$2 OR e.slug=$2)", [id]);
+        const [event] = await catalog("(e.id::text=$3 OR e.slug=$3)", [id]);
         requireValue(event, 404, "Evento não encontrado.");
         res.json(event);
     });
@@ -115,7 +125,8 @@ export function createApp({ db, config, provider, sendEmail }) {
         const { rows: [order] } = await db.query("SELECT * FROM orders WHERE id=$1 AND user_id=$2", [id, req.user.id]);
         requireValue(order, 404, "Pedido não encontrado.");
         requireValue(order.status === "pending" && new Date(order.expires_at) > new Date(), 409, "A reserva deste pedido encerrou. Escolha um novo ingresso.");
-        if (config.paymentProvider === "mock") return res.json({ local: true, orderId: id });
+        if (order.payment_provider === "stripe") return res.json({ embedded: true, orderId: id });
+        if (order.payment_provider === "mock") return res.json({ local: true, orderId: id });
         if (order.checkout_url && !new URL(order.checkout_url).hostname.startsWith("sandbox.")) return res.json({ url: order.checkout_url });
         const { rows: [claimed] } = await db.query(
             "UPDATE orders SET checkout_lease_until=now()+interval '25 seconds' WHERE id=$1 AND (checkout_lease_until IS NULL OR checkout_lease_until<now()) RETURNING id", [id]
@@ -124,7 +135,7 @@ export function createApp({ db, config, provider, sendEmail }) {
         try {
             const { rows: [event] } = await db.query("SELECT * FROM events WHERE id=$1", [order.event_id]);
             const { rows: [org] } = await db.query("SELECT * FROM organizations WHERE id=$1", [event.org_id]);
-            const result = await paymentProvider.checkout(order, event, org);
+            const result = await adapter(order.payment_provider).checkout(order, event, org);
             await db.query("UPDATE orders SET preference_id=$2,checkout_url=$3,checkout_lease_until=NULL WHERE id=$1", [id, String(result.id), result.url]);
             res.json({ url: result.url });
         } catch (error) {
@@ -138,6 +149,54 @@ export function createApp({ db, config, provider, sendEmail }) {
         requireValue(order, 404, "Pedido não encontrado.");
         const result = await store.applyPayment(order.org_id, { id: "local:" + order.id, orderId: order.id, amount: order.total_cents, status: "approved", currency: "BRL", fee: 0 });
         res.json(result);
+    });
+    app.post("/api/orders/:id/payment-session", authenticated, async (req, res) => {
+        const { method } = z.object({ method: z.enum(["pix", "card"]) }).parse(req.body);
+        const { rows: [order] } = await db.query("SELECT * FROM orders WHERE id=$1 AND user_id=$2", [uuid.parse(req.params.id), req.user.id]);
+        requireValue(order, 404, "Pedido não encontrado.");
+        requireValue(order.payment_provider === "stripe" && order.status === "pending" && new Date(order.expires_at) > new Date(), 409, "Este pedido não permite iniciar um novo pagamento. Atualize a conta.");
+        const { rows: [claimed] } = await db.query("UPDATE orders SET checkout_lease_until=now()+interval '90 seconds' WHERE id=$1 AND (checkout_lease_until IS NULL OR checkout_lease_until<now()) RETURNING id", [order.id]);
+        requireValue(claimed, 409, "O pagamento está sendo preparado. Aguarde alguns segundos.");
+        try {
+            const { rows: [event] } = await db.query("SELECT * FROM events WHERE id=$1", [order.event_id]);
+            const { rows: [org] } = await db.query("SELECT * FROM organizations WHERE id=$1", [event.org_id]);
+            res.json(await adapter("stripe").checkout(order, event, org, req.user, method));
+        } finally { await db.query("UPDATE orders SET checkout_lease_until=NULL WHERE id=$1", [order.id]); }
+    });
+    app.post("/api/payments/stripe/onboard", authenticated, async (req, res) => {
+        const { orgId } = z.object({ orgId: uuid }).parse(req.body);
+        await member(db, req.user.id, orgId, ["owner"]);
+        requireValue(config.paymentProvider === "stripe", 409, "O recebimento Stripe ainda não está ativado na plataforma.");
+        res.json(await adapter("stripe").onboard(orgId));
+    });
+    app.post("/api/payments/stripe/status", authenticated, async (req, res) => {
+        const { orgId } = z.object({ orgId: uuid }).parse(req.body);
+        await member(db, req.user.id, orgId, ["owner"]);
+        res.json(await adapter("stripe").syncAccount(orgId, true));
+    });
+    app.post("/api/webhooks/stripe", async (req, res) => {
+        requireValue(config.stripeWebhookSecret && req.rawBody, 503, "Webhook Stripe não configurado.");
+        let event;
+        try { event = stripe.sdk().webhooks.constructEvent(req.rawBody, req.headers["stripe-signature"], config.stripeWebhookSecret); }
+        catch { throw new HttpError(400, "Assinatura Stripe inválida."); }
+        requireValue(event.livemode === Boolean(config.stripeProduction), 400, "Ambiente Stripe inválido.");
+        const { rows: [org] } = await db.query("SELECT id,stripe_account_id FROM organizations WHERE stripe_account_id=$1", [event.account || ""]);
+        if (!org) return res.json({ received: true });
+        if (event.type === "account.updated") await adapter("stripe").syncAccount(org.id);
+        if (["payment_intent.succeeded", "payment_intent.payment_failed", "charge.refunded", "charge.dispute.created", "checkout.session.completed", "checkout.session.async_payment_succeeded"].includes(event.type)) {
+            const object = event.data.object;
+            let id = object.object === "payment_intent" ? object.id : object.payment_intent;
+            if (event.type === "charge.dispute.created") {
+                const charge = await stripe.sdk().charges.retrieve(object.charge, {}, { stripeAccount: org.stripe_account_id });
+                id = charge.payment_intent;
+            }
+            if (typeof id === "string") {
+                const payment = await adapter("stripe").payment(org.id, id);
+                requireValue(payment.live === Boolean(config.stripeProduction) && payment.collectorId === org.stripe_account_id, 400, "Pagamento fora do ambiente esperado.");
+                await store.applyPayment(org.id, payment);
+            }
+        }
+        res.json({ received: true });
     });
     app.post("/api/orders/:id/refund-request", authenticated, async (req, res) => {
         const { reason } = z.object({ reason: z.string().trim().min(5).max(500) }).parse(req.body);
@@ -168,7 +227,7 @@ export function createApp({ db, config, provider, sendEmail }) {
         const { rows: [state] } = await db.query("DELETE FROM oauth_states WHERE token_hash=$1 AND user_id=$2 AND expires_at>now() RETURNING *", [hash(input.state), req.user.id]);
         requireValue(state, 400, "A conexão expirou. Tente novamente pelo painel.");
         await member(db, req.user.id, state.org_id, ["owner"]);
-        const result = await paymentProvider.connect(input.code, state.verifier);
+        const result = await adapter("mercadopago").connect(input.code, state.verifier);
         await db.query("UPDATE organizations SET mp_user_id=$2,mp_access_token=$3,mp_refresh_token=$4,mp_expires_at=$5 WHERE id=$1",
             [state.org_id, String(result.user_id), seal(result.access_token, config), seal(result.refresh_token, config), new Date(Date.now() + result.expires_in * 1000)]);
         res.redirect(303, "/admin.html?conectado=1");
@@ -176,7 +235,7 @@ export function createApp({ db, config, provider, sendEmail }) {
     app.post("/api/webhooks/mercadopago", async (req, res) => {
         requireValue(verifyWebhook(req, config), 401, "Assinatura inválida.");
         const orgId = uuid.parse(req.query.org);
-        const payment = await paymentProvider.payment(orgId, req.query["data.id"]);
+        const payment = await adapter("mercadopago").payment(orgId, req.query["data.id"]);
         const { rows: [org] } = await db.query("SELECT mp_user_id FROM organizations WHERE id=$1", [orgId]);
         requireValue(org && org.mp_user_id === payment.collectorId && payment.live === config.mpProduction, 400, "Pagamento fora da conta ou do ambiente esperado.");
         await store.applyPayment(orgId, payment);
@@ -212,7 +271,7 @@ export function createApp({ db, config, provider, sendEmail }) {
         next();
     });
     app.get("/api/platform", async (req, res) => {
-        const { rows: organizations } = await db.query("SELECT id,name,fee_bps,fee_mode,mp_user_id FROM organizations ORDER BY created_at");
+        const { rows: organizations } = await db.query("SELECT id,name,fee_bps,fee_mode,mp_user_id,stripe_account_id,stripe_ready FROM organizations ORDER BY created_at");
         const { rows: failedJobs } = await db.query("SELECT id,kind,status,attempts,last_error,created_at FROM jobs WHERE status='failed' ORDER BY created_at DESC LIMIT 100");
         res.json({ organizations, failedJobs });
     });

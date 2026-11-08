@@ -2,11 +2,11 @@ export async function tasks(db, config, provider, store, delivery) {
     const started = Date.now();
     await store.maintenance();
     let reconciled = 0;
-    if (config.paymentProvider === "mercadopago" && provider.search) {
+    if (config.paymentProvider !== "mock" && provider.search) {
         const { rows } = await db.query(`
-            SELECT o.id,e.org_id,g.mp_user_id FROM orders o
+            SELECT o.id,o.payment_provider,e.org_id,CASE WHEN o.payment_provider='stripe' THEN g.stripe_account_id ELSE g.mp_user_id END AS collector_id FROM orders o
             JOIN events e ON e.id=o.event_id JOIN organizations g ON g.id=e.org_id
-            WHERE o.preference_id IS NOT NULL AND o.created_at>now()-interval '180 days'
+            WHERE (o.preference_id IS NOT NULL OR EXISTS(SELECT 1 FROM checkout_sessions s WHERE s.order_id=o.id)) AND o.created_at>now()-interval '180 days'
             AND (o.reconciled_at IS NULL OR o.reconciled_at<now()-interval '10 minutes')
             ORDER BY o.reconciled_at NULLS FIRST,o.created_at DESC LIMIT 3`);
         for (const order of rows) {
@@ -16,9 +16,9 @@ export async function tasks(db, config, provider, store, delivery) {
                 AND (reconciled_at IS NULL OR reconciled_at<now()-interval '10 minutes') RETURNING id`, [order.id]);
             if (!claimed.length) continue;
             try {
-                const results = await provider.search(order.org_id, order.id);
+                const results = await provider.search(order.org_id, order.id, order.payment_provider);
                 for (const payment of results) {
-                    if (payment.orderId === order.id && payment.collectorId === order.mp_user_id && payment.live === config.mpProduction) {
+                    if (payment.orderId === order.id && payment.collectorId === order.collector_id && payment.live === (order.payment_provider === "stripe" ? Boolean(config.stripeProduction) : config.mpProduction)) {
                         await store.applyPayment(order.org_id, payment);
                     }
                 }

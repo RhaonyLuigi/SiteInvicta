@@ -35,7 +35,7 @@ export function commerce(db, config) {
             const bps = org.fee_bps ?? config.feeBps;
             if (lot.price_cents > 0) {
                 requireValue(bps !== null, 409, "A comissão da plataforma precisa ser definida antes da venda.");
-                requireValue(config.paymentProvider === "mock" || org.mp_access_token, 409, "O organizador precisa configurar o recebimento.");
+                requireValue(config.paymentProvider === "mock" || (config.paymentProvider === "stripe" ? org.stripe_ready : org.mp_access_token), 409, "O organizador precisa configurar o recebimento.");
             }
             const counts = await stock(client, event.id, lot.id);
             requireValue(quantity <= lot.capacity - counts.lot_used && quantity <= event.capacity - counts.event_used, 409, "A quantidade escolhida ficou indisponível.");
@@ -44,9 +44,9 @@ export function commerce(db, config) {
             const total = org.fee_mode === "added" ? subtotal + fee : subtotal;
             const { rows: [order] } = await client.query(`
                 INSERT INTO orders(user_id,event_id,lot_id,idempotency_key,quantity,unit_price_cents,
-                    subtotal_cents,fee_cents,total_cents,fee_bps,fee_mode,expires_at)
-                VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,now()+interval '15 minutes') RETURNING *`,
-            [userId, event.id, lot.id, idempotencyKey, quantity, lot.price_cents, subtotal, fee, total, bps || 0, org.fee_mode]);
+                    subtotal_cents,fee_cents,total_cents,fee_bps,fee_mode,expires_at,payment_provider)
+                VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,now()+($12::int * interval '1 minute'),$13) RETURNING *`,
+            [userId, event.id, lot.id, idempotencyKey, quantity, lot.price_cents, subtotal, fee, total, bps || 0, org.fee_mode, config.paymentProvider === "stripe" ? 30 : 15, config.paymentProvider]);
             return order;
         });
     }
@@ -71,6 +71,7 @@ export function commerce(db, config) {
         return db.transaction(async (client) => {
             const { rows: [event] } = await client.query("SELECT * FROM events WHERE id=$1 FOR UPDATE", [initial.event_id]);
             const { rows: [order] } = await client.query("SELECT * FROM orders WHERE id=$1 FOR UPDATE", [payment.orderId]);
+            requireValue(!payment.provider || payment.provider === order.payment_provider, 400, "Provedor diferente do registrado no pedido.");
             requireValue(event.org_id === orgId && payment.currency === "BRL" && payment.amount === order.total_cents,
                 400, "O pagamento não corresponde ao pedido.");
             const { rows: [previous] } = await client.query("SELECT * FROM payments WHERE provider_id=$1 FOR UPDATE", [payment.id]);

@@ -104,14 +104,19 @@ async function render() {
     byId("sold").textContent = summary.summary.tickets;
     byId("gross").textContent = money(summary.summary.gross_cents);
     byId("net").textContent = money(Number(summary.summary.gross_cents) - Number(summary.summary.platform_cents) - Number(summary.summary.provider_cents));
-    byId("receiving-status").textContent = current.mp_user_id ? "Conta Mercado Pago conectada" : "Conecte a conta que receberá os pagamentos.";
+    const stripe = data.paymentProvider === "stripe";
+    byId("receiving-status").textContent = stripe ? (current.stripe_ready ? "Recebimento com Pix e cartões habilitado" : current.stripe_account_id ? "Cadastro de recebimento em análise ou incompleto" : "Cadastre a conta que receberá suas vendas pela Stripe") : current.mp_user_id ? "Conta Mercado Pago conectada" : "Conecte a conta que receberá os pagamentos.";
     byId("commission-status").textContent = current.fee_bps === null ? "Comissão pendente de configuração pela plataforma." : "Comissão " + (current.fee_bps / 100).toFixed(2) + "% · " + (current.fee_mode === "added" ? "acrescida ao comprador" : "descontada do organizador");
     const receiving = byId("receiving-actions");
     receiving.replaceChildren();
-    if (current.role === "owner") receiving.append(button("Conectar Mercado Pago", async () => {
-        const result = await api("/payments/connect", { method: "POST", body: { orgId: current.id } });
+    if (current.role === "owner") receiving.append(button(stripe ? "Configurar recebimento" : "Conectar Mercado Pago", async () => {
+        const result = await api(stripe ? "/payments/stripe/onboard" : "/payments/connect", { method: "POST", body: { orgId: current.id } });
         location.assign(result.url);
     }));
+    if (stripe && current.stripe_account_id && current.role === "owner") receiving.append(button("Verificar cadastro", async () => {
+        const result = await api("/payments/stripe/status", { method: "POST", body: { orgId: current.id } });
+        await load(current.id); message(result.ready ? "Recebimento habilitado." : "Conclua o cadastro e habilite Pix no painel Stripe.");
+    }, true));
     if (user.platformOwner) { const link = element("a", "Definir comissão", "button button-secondary"); link.href = "/plataforma.html"; receiving.append(link); }
     const team = byId("team-list"); team.replaceChildren();
     for (const person of summary.team) {

@@ -8,8 +8,8 @@ await build();
 runtime.app.use((req, res, next) => {
     res.set({
         "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer",
-        "Permissions-Policy": "camera=(self), microphone=(), geolocation=()",
-        "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; media-src 'self'; font-src 'self'; connect-src 'self'; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+        "Permissions-Policy": "camera=(self), microphone=(), geolocation=(), payment=(self \"https://js.stripe.com\" \"https://hooks.stripe.com\")",
+        "Content-Security-Policy": "default-src 'self'; script-src 'self' https://js.stripe.com; style-src 'self'; img-src 'self' data: https:; media-src 'self'; font-src 'self'; connect-src 'self' https://*.stripe.com https://*.stripe.network; worker-src 'self' blob:; frame-src https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
     });
     next();
 });

@@ -24,10 +24,14 @@ export function configuration(overrides = {}) {
         vapidPublic: process.env.VAPID_PUBLIC_KEY || "",
         vapidPrivate: process.env.VAPID_PRIVATE_KEY || "",
         cronSecret: process.env.CRON_SECRET || "",
+        stripeSecret: process.env.STRIPE_SECRET_KEY || "",
+        stripePublic: process.env.STRIPE_PUBLISHABLE_KEY || "",
+        stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || "",
+        stripeProduction: process.env.STRIPE_ENV === "production",
         ...overrides
     };
-    if (!["mock", "mercadopago"].includes(config.paymentProvider) || (config.production && (new URL(config.url).protocol !== "https:" || config.paymentProvider !== "mercadopago"))) {
-        throw new Error("Produção requer HTTPS e PAYMENT_PROVIDER=mercadopago.");
+    if (!["mock", "mercadopago", "stripe"].includes(config.paymentProvider) || (config.production && (new URL(config.url).protocol !== "https:" || config.paymentProvider === "mock"))) {
+        throw new Error("Produção requer HTTPS e um provedor de pagamento real.");
     }
     if (config.feeBps !== null && (!Number.isInteger(config.feeBps) || config.feeBps < 0 || config.feeBps > 2000)) {
         throw new Error("PLATFORM_FEE_BPS deve ser vazio ou um inteiro entre 0 e 2000.");

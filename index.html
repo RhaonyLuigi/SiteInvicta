@@ -178,7 +178,7 @@
     <form id="checkout-form" class="stack">
         <label for="quantity">Quantidade</label><div class="quantity-selector"><button class="quantity-step" type="button" data-quantity-step="-1" aria-label="Diminuir quantidade">−</button><input id="quantity" type="number" min="1" max="10" value="1" required step="1"><button class="quantity-step" type="button" data-quantity-step="1" aria-label="Aumentar quantidade">+</button></div>
         <dl class="order-totals"><div><dt>Ingressos</dt><dd id="subtotal"></dd></div><div id="fee-line"><dt>Taxa da plataforma</dt><dd id="fee"></dd></div><div><dt>Total</dt><dd><output id="checkout-total"></output></dd></div></dl>
-        <p class="field-help">Ao continuar, você reserva os ingressos por 15 minutos e confere o pagamento na sua conta.</p>
+        <p class="field-help" id="reservation-note">Ao continuar, você reserva os ingressos por 15 minutos e confere o pagamento na sua conta.</p>
         <button class="button" id="reserve-button" type="submit">Reservar e continuar</button>
     </form>
     <p id="checkout-status" class="notice" role="status" hidden></p>

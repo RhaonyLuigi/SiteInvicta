@@ -1,3 +1,5 @@
+> Atualização: o checkout no aplicativo com Pix e carteiras digitais usa Stripe Connect. Siga [STRIPE.md](STRIPE.md) para ativar. As instruções Mercado Pago abaixo continuam válidas para o provedor anterior.
+
 # Ativação e operação
 
 ## Configuração necessária para a primeira venda

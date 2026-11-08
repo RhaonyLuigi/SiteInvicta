@@ -4,7 +4,7 @@ import { equal, seal, unseal, HttpError } from "./security.js";
 export function payments(db, config, request = fetch) {
     function normalize(result) {
         return {
-            id: String(result.id), orderId: result.external_reference, collectorId: String(result.collector_id),
+            provider: "mercadopago", id: String(result.id), orderId: result.external_reference, collectorId: String(result.collector_id),
             status: result.status, amount: Math.round(Number(result.transaction_amount) * 100),
             currency: result.currency_id, live: result.live_mode,
             fee: Math.round((result.fee_details || []).filter((item) => item.type !== "application_fee")

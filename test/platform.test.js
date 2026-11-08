@@ -7,6 +7,8 @@ import { createApp } from "../server/app.js";
 import { hash, token, seal } from "../server/security.js";
 import { payments } from "../server/payments.js";
 import { Pool } from "pg";
+import Stripe from "stripe";
+import { stripePayments } from "../server/stripe.js";
 
 let db, runtime, server, config, origin;
 const emails = [];
@@ -86,6 +88,95 @@ async function order(f, user = buyer, quantity = 1, key = randomUUID()) {
 async function pay(f, value, paymentId = randomUUID()) {
     return runtime.store.applyPayment(f.org.id, { id: paymentId, orderId: value.id, amount: value.total_cents, currency: "BRL", status: "approved", fee: 100 });
 }
+
+test("Stripe separa Pix e cartões, desconta comissão e reutiliza sessões sem duplicar cobrança", async () => {
+    const f = await fixture();
+    const value = (await order(f)).data;
+    const accountId = "acct_" + randomUUID();
+    await db.query("UPDATE organizations SET stripe_account_id=$2 WHERE id=$1", [f.org.id, accountId]);
+    await db.query("UPDATE orders SET payment_provider='stripe' WHERE id=$1", [value.id]);
+    value.payment_provider = "stripe";
+    f.org.stripe_account_id = accountId;
+    const calls = [], sessions = new Map();
+    let active = true, refundComplete = false;
+    const stripeConfig = { ...config, stripeSecret: "sk_test_fixture", stripePublic: "pk_test_fixture", stripeProduction: false, url: "https://ingressos.example.com" };
+    const sdk = {
+        accounts: { retrieve: async () => ({ country: "BR", charges_enabled: true, payouts_enabled: true, capabilities: { card_payments: "active", pix_payments: active ? "active" : "pending" } }) },
+        paymentMethodDomains: { list: async () => ({ data: [] }), create: async (data, options) => { assert.equal(options.stripeAccount, accountId); assert.equal(data.domain_name, "ingressos.example.com"); return { enabled: true }; } },
+        checkout: { sessions: {
+            create: async (data, options) => { calls.push({ data, options }); const session = { id: "cs_" + calls.length, status: "open", client_secret: "secret_" + calls.length }; sessions.set(session.id, session); return session; },
+            retrieve: async (id, data, options) => { assert.equal(options.stripeAccount, accountId); return sessions.get(id); }
+        } },
+        refunds: {
+            create: async (data, options) => { assert.equal(data.refund_application_fee, true); assert.equal(options.stripeAccount, accountId); return { id: "re_fixture", status: "pending" }; },
+            retrieve: async () => ({ id: "re_fixture", status: refundComplete ? "succeeded" : "pending" })
+        }
+    };
+    const adapter = stripePayments(db, stripeConfig, sdk);
+    assert.equal((await adapter.syncAccount(f.org.id, true)).walletDomainReady, true);
+    const first = await adapter.checkout(value, f.event, f.org, buyer, "pix");
+    assert.deepEqual(await adapter.checkout(value, f.event, f.org, buyer, "pix"), first);
+    await adapter.checkout(value, f.event, f.org, buyer, "card");
+    assert.equal(calls.length, 2);
+    assert.deepEqual(calls[0].data.payment_method_types, ["pix"]);
+    assert.deepEqual(calls[1].data.payment_method_types, ["card"]);
+    assert.equal(calls[0].data.line_items[0].price_data.unit_amount, value.total_cents);
+    assert.equal(calls[0].data.payment_intent_data.application_fee_amount, 250);
+    assert.equal(calls[0].data.ui_mode, "elements");
+    assert.equal(calls[0].options.stripeAccount, accountId);
+    assert.notEqual(calls[0].options.idempotencyKey, calls[1].options.idempotencyKey);
+    active = false;
+    await assert.rejects(adapter.checkout(value, f.event, f.org, buyer, "pix"), /habilitar Pix/);
+    await assert.rejects(adapter.refund(f.org.id, "pi_fixture", "refund_fixture"), /ainda não foi concluído/);
+    refundComplete = true;
+    assert.equal((await adapter.refund(f.org.id, "pi_fixture", "refund_fixture")).status, "succeeded");
+    assert.throws(() => stripePayments(db, { ...stripeConfig, stripeProduction: true }, sdk).sdk(), /ambiente/);
+});
+
+test("Stripe protege sessão privada e só emite ingresso após webhook assinado e pagamento conferido", async () => {
+    const f = await fixture();
+    const value = (await order(f)).data;
+    const accountId = "acct_" + randomUUID();
+    await db.query("UPDATE organizations SET stripe_account_id=$2,stripe_ready=true WHERE id=$1", [f.org.id, accountId]);
+    await db.query("UPDATE orders SET payment_provider='stripe' WHERE id=$1", [value.id]);
+    const stripeConfig = { ...config, paymentProvider: "stripe", stripeSecret: "sk_test_fixture", stripePublic: "pk_test_fixture", stripeWebhookSecret: "whsec_fixture", stripeProduction: false };
+    let payment = { provider: "stripe", id: "pi_" + randomUUID(), orderId: value.id, collectorId: accountId, amount: value.total_cents, currency: "BRL", status: "approved", live: false };
+    const stripeRuntime = createApp({ db, config: stripeConfig, provider: {
+        checkout: async (o, event, org, user, method) => { assert.equal(o.total_cents, 5000); return { clientSecret: "cs_private", method }; },
+        payment: async () => payment
+    } });
+    const listener = stripeRuntime.app.listen(0, "127.0.0.1");
+    await new Promise((resolve) => listener.once("listening", resolve));
+    const address = "http://127.0.0.1:" + listener.address().port;
+    stripeConfig.url = address;
+    const request = async (path, body, user = buyer, headers = {}) => {
+        const response = await fetch(address + "/api" + path, { method: "POST", headers: { origin: address, cookie: user.cookie, "Content-Type": "application/json", ...headers }, body: JSON.stringify(body) });
+        return { status: response.status, data: await response.json() };
+    };
+    try {
+        const path = "/orders/" + value.id + "/payment-session";
+        assert.equal((await request(path, { method: "pix" }, outsider)).status, 404);
+        assert.equal((await request(path, { method: "cash" })).status, 400);
+        assert.equal((await request(path, { method: "pix", total: 1 })).data.method, "pix");
+        assert.equal((await db.query("SELECT count(*)::int AS n FROM tickets WHERE order_id=$1", [value.id])).rows[0].n, 0);
+        const event = { id: "evt_fixture", type: "payment_intent.succeeded", account: accountId, livemode: false, data: { object: { id: payment.id, object: "payment_intent" } } };
+        const webhook = async (body, signature) => request("/webhooks/stripe", body, buyer, { "stripe-signature": signature || Stripe.webhooks.generateTestHeaderString({ payload: JSON.stringify(body), secret: stripeConfig.stripeWebhookSecret }) });
+        assert.equal((await webhook(event, "invalid")).status, 400);
+        assert.equal((await webhook({ ...event, livemode: true })).status, 400);
+        payment = { ...payment, amount: 1 };
+        assert.equal((await webhook(event)).status, 400);
+        payment = { ...payment, amount: value.total_cents, provider: "mercadopago" };
+        assert.equal((await webhook(event)).status, 400);
+        payment = { ...payment, provider: "stripe" };
+        assert.equal((await webhook(event)).status, 200);
+        assert.equal((await webhook(event)).status, 200);
+        assert.equal((await db.query("SELECT count(*)::int AS n FROM tickets WHERE order_id=$1", [value.id])).rows[0].n, 1);
+        assert.equal((await request(path, { method: "card" })).status, 409);
+        const another = (await order(f)).data;
+        await db.query("UPDATE orders SET payment_provider='stripe',expires_at=now()-interval '1 second' WHERE id=$1", [another.id]);
+        assert.equal((await request("/orders/" + another.id + "/payment-session", { method: "pix" })).status, 409);
+    } finally { await new Promise((resolve) => listener.close(resolve)); }
+});
 
 test("login por e-mail é de uso único, cria sessão e preserva retorno", async () => {
     await db.query("INSERT INTO jobs(kind,dedupe_key,payload) VALUES('email','older-email',$1)", [JSON.stringify({ email: "older@invicta.test", subject: "Aviso anterior", text: "Aviso na fila" })]);

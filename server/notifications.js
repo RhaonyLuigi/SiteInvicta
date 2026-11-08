@@ -59,7 +59,7 @@ export function notifications(db, config, paymentProvider, sendEmail) {
     }
 
     async function refund(payload) {
-        await paymentProvider.refund(payload.orgId, payload.paymentId, hash("refund:" + payload.paymentId));
+        await paymentProvider.refund(payload.orgId, payload.paymentId, hash("refund:" + payload.paymentId), payload.orderId);
         await db.transaction(async (client) => {
             await client.query("UPDATE payments SET status='refunded',updated_at=now() WHERE provider_id=$1", [payload.paymentId]);
             const { rows: [order] } = await client.query(

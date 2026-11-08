@@ -118,6 +118,7 @@ byId("search-form").addEventListener("submit", async (event) => {
 
 try {
     const health = await api("/health");
+    if (health.reservationMinutes) byId("reservation-note").textContent = "Ao continuar, você reserva os ingressos por " + health.reservationMinutes + " minutos e confere o pagamento na sua conta.";
     if (!health.ready) {
         message(health.message);
         byId("sales-note").textContent = "As vendas serão abertas após a configuração da plataforma.";

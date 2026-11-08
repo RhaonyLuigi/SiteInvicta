@@ -5,7 +5,7 @@ async function load() {
     list.replaceChildren();
     for (const org of data.organizations) {
         const form = element("form", null, "card stack");
-        form.append(element("h2", org.name), element("p", org.mp_user_id ? "Conta de recebimento conectada" : "Recebimento pendente", "muted"));
+        form.append(element("h2", org.name), element("p", "Stripe: " + (org.stripe_ready ? "habilitada" : "pendente") + " · Mercado Pago: " + (org.mp_user_id ? "conectado" : "pendente"), "muted"));
         const label = element("label", "Comissão percentual"); label.htmlFor = "fee-" + org.id;
         const input = element("input"); input.id = label.htmlFor; input.name = "percentage"; input.type = "number"; input.min = 0; input.max = 20; input.step = 0.01; input.required = true;
         input.value = org.fee_bps === null ? "" : org.fee_bps / 100;
