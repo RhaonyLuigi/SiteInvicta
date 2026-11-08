@@ -7,6 +7,9 @@ const byId = (id) => document.getElementById(id);
 let health;
 let user;
 let pending = false;
+let expiryTimer;
+let walletOrders = [];
+let walletOffline = false;
 const params = new URLSearchParams(location.search);
 const fragment = new URLSearchParams(location.hash.slice(1));
 const access = fragment.get("acesso");
@@ -23,6 +26,20 @@ function returnPath() {
 }
 const labels = { pending: "Aguardando pagamento", paid: "Confirmado", expired: "Reserva encerrada", cancelled: "Cancelado", refund_pending: "Reembolso em processamento", refunded: "Reembolsado", charged_back: "Pagamento contestado" };
 function renderWallet(orders, offline = false) {
+    clearTimeout(expiryTimer);
+    for (const previous of walletOrders) {
+        if (!orders.some((order) => order.id === previous.id)) closePayment(previous.id);
+    }
+    walletOrders = orders;
+    walletOffline = offline;
+    const now = Date.now();
+    orders = orders.filter((order) => {
+        const expired = order.status === "expired" || (order.status === "pending" && new Date(order.expires_at).getTime() <= now);
+        if (expired) closePayment(order.id);
+        return !expired;
+    });
+    const deadlines = orders.filter((order) => order.status === "pending").map((order) => new Date(order.expires_at).getTime()).filter(Number.isFinite);
+    if (deadlines.length) expiryTimer = setTimeout(() => renderWallet(walletOrders, walletOffline), Math.min(2147483647, Math.max(1, Math.min(...deadlines) - now)));
     byId("wallet-section").hidden = false;
     const list = byId("wallet");
     list.replaceChildren();
@@ -180,4 +197,7 @@ const refreshTimer = setInterval(async () => {
         try { await refresh(); } catch { /* A atualização manual permanece disponível. */ }
     }
 }, 10000);
-window.addEventListener("pagehide", () => clearInterval(refreshTimer), { once: true });
+document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && walletOrders.length) renderWallet(walletOrders, walletOffline);
+});
+window.addEventListener("pagehide", () => { clearInterval(refreshTimer); clearTimeout(expiryTimer); }, { once: true });

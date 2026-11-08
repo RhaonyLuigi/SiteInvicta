@@ -142,7 +142,7 @@ export function commerce(db, config) {
             SELECT o.*,e.name AS event_name,e.starts_at,e.place,e.status AS event_status,e.slug,l.category,
                 COALESCE(json_agg(json_build_object('id',t.id,'checkedAt',t.checked_at)) FILTER(WHERE t.id IS NOT NULL),'[]') AS tickets
             FROM orders o JOIN events e ON e.id=o.event_id JOIN lots l ON l.id=o.lot_id
-            LEFT JOIN tickets t ON t.order_id=o.id WHERE o.user_id=$1 ${orderId ? "AND o.id=$2" : ""}
+            LEFT JOIN tickets t ON t.order_id=o.id WHERE o.user_id=$1 ${orderId ? "AND o.id=$2" : "AND o.status<>'expired' AND (o.status<>'pending' OR o.expires_at>now())"}
             GROUP BY o.id,e.id,l.id ORDER BY o.created_at DESC LIMIT 100`, values);
         return rows.map((order) => ({ ...order, tickets: order.tickets.map((ticket) => ({
             ...ticket, code: order.status === "paid" && order.event_status !== "cancelled" ? ticketCode(ticket.id, config) : null

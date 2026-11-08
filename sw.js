@@ -1,4 +1,4 @@
-const CACHE = "invicta-app-v6";
+const CACHE = "invicta-app-v7";
 const OFFLINE = "/offline.html";
 const SHELL = [OFFLINE, "/conta.html", "/hosting.js", "/styles.css", "/app.css", "/storefront.css", "/client/api.js", "/client/pwa.js", "/client/account.js", "/client/checkout.js", "/vendor/qrcode.mjs", "/assets/app-icon.svg"];
 self.addEventListener("install", (event) => {
