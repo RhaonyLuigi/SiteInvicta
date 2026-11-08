@@ -10,10 +10,9 @@ O código cria contas conectadas Standard brasileiras, com painel próprio. O or
 
 ## 2. Chaves de teste na Vercel
 
-No ambiente de teste da Stripe, copie a chave publicável `pk_test_...` e a chave secreta `sk_test_...`. Em Vercel → projeto SiteInvicta → Settings → Environment Variables, configure:
+Em produção o software sempre seleciona Stripe, independentemente de um valor antigo de PAYMENT_PROVIDER. Remova variáveis de provedores antigos da hospedagem quando concluir a migração. No ambiente de teste da Stripe, copie a chave publicável `pk_test_...` e a chave secreta `sk_test_...`. Em Vercel → projeto SiteInvicta → Settings → Environment Variables, configure:
 
 ```dotenv
-PAYMENT_PROVIDER=stripe
 STRIPE_ENV=test
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_PUBLISHABLE_KEY=pk_test_...
@@ -21,7 +20,7 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 APP_URL=https://site-invicta.vercel.app
 ```
 
-O `whsec_...` é gerado no próximo passo. Mantenha `NODE_ENV=production`, o banco, a chave de criptografia, Resend e o segredo de jobs já configurados. Não publique chaves em commits, capturas ou mensagens. Não use as contas ou cartões de teste do Mercado Pago na Stripe. Configure primeiro todas as variáveis e então faça um novo deploy.
+O `whsec_...` é gerado no próximo passo. Mantenha `NODE_ENV=production`, o banco, a chave de criptografia, Resend e o segredo de jobs já configurados. Não publique chaves em commits, capturas ou mensagens. Use somente as contas e os cartões de teste oficiais da Stripe. Configure primeiro todas as variáveis e então faça um novo deploy.
 
 ## 3. Webhook de contas conectadas
 
@@ -70,7 +69,7 @@ Contas conectadas de teste não se convertem em contas reais. A ligação de rec
 - Pix e cartão têm sessões distintas, reutilizadas com idempotência. Se alguém pagar as duas, o segundo pagamento é encaminhado a estorno. Não emita ingresso pela resposta do navegador.
 - Reembolsos deste sistema são integrais. Estorno externo parcial invalida o pedido inteiro; não faça estornos parciais pelo painel sem tratar os ingressos correspondentes.
 - O reembolso devolve também a comissão. Taxas não devolvidas pelo provedor e saldo insuficiente do recebedor precisam ser considerados na operação. A fila acompanha e tenta novamente estornos pendentes; acompanhe tarefas com falha no painel.
-- Pedidos mantêm o provedor original. Preserve as credenciais/webhook do Mercado Pago para conciliação e devolução de pedidos antigos. A ativação Stripe não converte uma compra anterior; pedidos novos seguem o provedor ativo.
+- Stripe é o único provedor de pagamentos reais. O modo mock serve apenas ao desenvolvimento local. Reservas pendentes anteriores à migração são encerradas; seu histórico é mantido sem converter transações antigas em cobranças Stripe. As migrações históricas do banco são preservadas, e a migração 004 remove a estrutura de integração desativada.
 - O servidor não recebe PAN/CVC. Dados de pagamento são coletados pelos elementos seguros Stripe. Client secrets são entregues apenas ao titular autenticado do pedido e não devem entrar em logs, URLs ou armazenamento offline.
 
 ## Referências oficiais

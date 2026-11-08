@@ -1,8 +1,4 @@
-> Atualização: o checkout no aplicativo com Pix e carteiras digitais usa Stripe Connect. Siga [STRIPE.md](STRIPE.md) para ativar. As instruções Mercado Pago abaixo continuam válidas para o provedor anterior.
-
 # Banco e pagamentos
-
-Consulta às páginas oficiais em 7 de novembro de 2026. Tarifas, limites, elegibilidade e condições de liquidação devem ser confirmados na conta antes de vender.
 
 ## Banco
 
@@ -16,14 +12,10 @@ Minha recomendação é começar com Neon para desenvolvimento e escolher um pla
 
 ## Recebimento e comissão
 
-| Provedor | Adequação | Estado neste código |
-| --- | --- | --- |
-| **Mercado Pago Checkout Pro + split 1:1** | Checkout hospedado e conta própria para cada organizador. A plataforma recebe sua comissão e o organizador recebe o restante, descontadas também as tarifas do provedor. Exige OAuth e aprovação cadastral. [Integração](https://www.mercadopago.com.br/developers/pt/docs/split-payments/split-1-1/integration-configuration/integrate-marketplace), [pré-requisitos](https://www.mercadopago.com.br/developers/pt/docs/split-payments/split-1-1/prerequisites). | Adaptador implementado; requer suas credenciais e homologação. A tarifa depende do meio, prazo e condições da conta. Consulte o painel do vendedor. |
-| **Asaas** | Alternativa para comparar Pix e split. Uma tarifa fixa pode compensar em ingressos maiores; calcule por pedido, incluindo taxas adicionais. [Split](https://docs.asaas.com/docs/split-de-pagamentos), [preços](https://www.asaas.com/precos-e-taxas). | Sugestão para uma futura troca de adaptador. Não está integrado. A tabela consultada mostra Pix R$ 2,15 e valor promocional R$ 1,08; crédito à vista R$ 0,49 + 2,99%, com promoção de três meses. Confirme elegibilidade, liquidação e custos de split. |
-| **Pagar.me** | Comparar quando houver volume para negociar contrato e regras de recebedores. [Split](https://docs.pagar.me/docs/pedidos-com-split). | Sugestão comercial; não integrado. Peça proposta completa. |
+A Stripe Connect é o único provedor real integrado. O organizador cadastra uma conta Standard, os pagamentos são cobranças diretas e a comissão da plataforma é enviada em application_fee_amount. Pix depende da habilitação da conta; carteiras dependem também do domínio e dispositivo. Consulte [a ativação](STRIPE.md) e [as tarifas oficiais](https://stripe.com/br/pricing), incluindo as condições de Connect.
 
-A comissão configurada aqui incide sobre o **valor dos ingressos**, pois o sistema não calcula as despesas e o lucro contábil do evento. Ela é independente da tarifa de processamento. No Mercado Pago, o checkout de preferências recebe um valor em reais em `marketplace_fee`, calculado pela API a partir do percentual configurado. Não há custódia manual dos pagamentos pela Invicta.
+A comissão incide sobre o valor dos ingressos e não sobre o lucro contábil do evento. É configurável entre 0 e 20% por organização, descontada do organizador ou acrescentada ao comprador. Percentual vazio bloqueia a venda. O servidor fixa preço, taxa e total no pedido; alterações posteriores valem para novas reservas. Reembolsos são integrais e devolvem também a comissão, sujeitos ao processamento do provedor.
 
-Exemplo apenas ilustrativo: ingresso de R$ 50 e comissão escolhida de 5% geram R$ 2,50 para a plataforma. No modo **incluída**, o comprador paga R$ 50 e o organizador recebe R$ 47,50 menos a tarifa do provedor. No modo **acrescida**, o comprador paga R$ 52,50 e o organizador recebe R$ 50 menos a tarifa do provedor, calculada segundo o contrato sobre a cobrança. Esses valores não estimam impostos nem custos de estorno ou contestação.
+Stone/Pagar.me é uma alternativa futura para negociação. Não está integrada. Antes da troca, confirme a aprovação de uma plataforma de ingressos, cadastro de recebedores, Pix com split, carteiras, custos de repasse, estorno e contestações no mesmo contrato. [Split](https://docs.pagar.me/reference/split-1), [ofertas](https://website.pagar.me/ofertas).
 
-Defina uma regra comercial escrita para taxas, cancelamentos, suporte e responsabilidades antes de ativar vendas. A comissão começa pendente. Um administrador da plataforma pode configurar entre 0 e 20% por organização em `plataforma.html`; as alterações valem para novas reservas. Estornos implementados são integrais. A devolução da tarifa do próprio provedor depende de suas regras.
+Uma futura troca deve implementar o contrato do adaptador de pagamentos, preservar o provedor de cada pedido e definir como concluir transações anteriores antes de retirar a integração vigente.

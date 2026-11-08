@@ -1,4 +1,4 @@
-import { createHash, createHmac, randomBytes, timingSafeEqual, createCipheriv, createDecipheriv } from "node:crypto";
+import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
 export const token = () => randomBytes(32).toString("base64url");
 export const hash = (value) => createHash("sha256").update(value).digest("hex");
@@ -12,20 +12,6 @@ export function equal(a, b) {
 function key(config) {
     if (!/^[a-f0-9]{64}$/i.test(config.encryptionKey)) throw new Error("Configure ENCRYPTION_KEY com 32 bytes hexadecimais.");
     return Buffer.from(config.encryptionKey, "hex");
-}
-
-export function seal(value, config) {
-    const iv = randomBytes(12);
-    const cipher = createCipheriv("aes-256-gcm", key(config), iv);
-    const bytes = Buffer.concat([cipher.update(value, "utf8"), cipher.final()]);
-    return [iv, cipher.getAuthTag(), bytes].map((part) => part.toString("base64url")).join(".");
-}
-
-export function unseal(value, config) {
-    const [iv, tag, bytes] = value.split(".").map((part) => Buffer.from(part, "base64url"));
-    const cipher = createDecipheriv("aes-256-gcm", key(config), iv);
-    cipher.setAuthTag(tag);
-    return Buffer.concat([cipher.update(bytes), cipher.final()]).toString("utf8");
 }
 
 export function ticketCode(id, config) {

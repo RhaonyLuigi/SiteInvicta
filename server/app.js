@@ -1,14 +1,12 @@
 import express from "express";
 import { z } from "zod";
-import { createHash } from "node:crypto";
 import { authRouter, identify, authenticated } from "./auth.js";
 import { organizerRouter } from "./organizers.js";
 import { commerce, member } from "./commerce.js";
-import { payments, verifyWebhook } from "./payments.js";
 import { stripePayments } from "./stripe.js";
 import { notifications, notify, job } from "./notifications.js";
 import { tasks } from "./tasks.js";
-import { requireValue, HttpError, hash, token, seal } from "./security.js";
+import { requireValue, HttpError, hash } from "./security.js";
 
 const uuid = z.uuid();
 z.config(z.locales.pt());
@@ -28,8 +26,11 @@ export function createApp({ db, config, provider, sendEmail }) {
         next();
     });
     const stripe = stripePayments(db, config);
-    const adapters = { mercadopago: payments(db, config), stripe, mock: { refund: async () => ({ status: "refunded" }) } };
-    const adapter = (name) => provider || adapters[name];
+    const adapters = { stripe, mock: { refund: async () => ({ status: "refunded" }) } };
+    const adapter = (name) => {
+        requireValue(adapters[name], 409, "O provedor deste pedido foi desativado. Consulte o suporte.");
+        return provider || adapters[name];
+    };
     const paymentProvider = {
         async refund(orgId, id, key, orderId) {
             const { rows: [order] } = await db.query("SELECT payment_provider FROM orders WHERE id=$1", [orderId]);
@@ -71,7 +72,7 @@ export function createApp({ db, config, provider, sendEmail }) {
         const { rows: events } = await db.query(`
             SELECT e.*,o.name AS organizer,
                 COALESCE(o.fee_bps,$1::int) AS fee_bps,o.fee_mode,
-                (CASE WHEN $2::text='stripe' THEN o.stripe_ready ELSE o.mp_access_token IS NOT NULL END) AS connected
+                (o.stripe_ready OR $2::text='mock') AS connected
             FROM events e JOIN organizations o ON o.id=e.org_id
             WHERE e.status<>'draft' AND ${filter} ORDER BY e.starts_at LIMIT 100`, [config.feeBps, config.paymentProvider, ...values]);
         if (!events.length) return [];
@@ -127,21 +128,7 @@ export function createApp({ db, config, provider, sendEmail }) {
         requireValue(order.status === "pending" && new Date(order.expires_at) > new Date(), 409, "A reserva deste pedido encerrou. Escolha um novo ingresso.");
         if (order.payment_provider === "stripe") return res.json({ embedded: true, orderId: id });
         if (order.payment_provider === "mock") return res.json({ local: true, orderId: id });
-        if (order.checkout_url && !new URL(order.checkout_url).hostname.startsWith("sandbox.")) return res.json({ url: order.checkout_url });
-        const { rows: [claimed] } = await db.query(
-            "UPDATE orders SET checkout_lease_until=now()+interval '25 seconds' WHERE id=$1 AND (checkout_lease_until IS NULL OR checkout_lease_until<now()) RETURNING id", [id]
-        );
-        requireValue(claimed, 409, "O checkout está sendo preparado. Aguarde alguns segundos.");
-        try {
-            const { rows: [event] } = await db.query("SELECT * FROM events WHERE id=$1", [order.event_id]);
-            const { rows: [org] } = await db.query("SELECT * FROM organizations WHERE id=$1", [event.org_id]);
-            const result = await adapter(order.payment_provider).checkout(order, event, org);
-            await db.query("UPDATE orders SET preference_id=$2,checkout_url=$3,checkout_lease_until=NULL WHERE id=$1", [id, String(result.id), result.url]);
-            res.json({ url: result.url });
-        } catch (error) {
-            await db.query("UPDATE orders SET checkout_lease_until=NULL WHERE id=$1", [id]);
-            throw error;
-        }
+        throw new HttpError(409, "Este pedido utiliza um provedor desativado. Faça uma nova reserva.");
     });
     app.post("/api/orders/:id/local-payment", authenticated, async (req, res) => {
         requireValue(!config.production && config.paymentProvider === "mock", 404, "Operação indisponível.");
@@ -211,37 +198,6 @@ export function createApp({ db, config, provider, sendEmail }) {
         res.json(await store.checkIn(req.user.id, input.eventId, input.code));
     });
 
-    app.post("/api/payments/connect", authenticated, async (req, res) => {
-        const { orgId } = z.object({ orgId: uuid }).parse(req.body);
-        await member(db, req.user.id, orgId, ["owner"]);
-        requireValue(config.mpClientId && config.mpClientSecret && config.encryptionKey, 503, "Configure as credenciais de integração do Mercado Pago.");
-        const state = token();
-        const verifier = token();
-        await db.query("INSERT INTO oauth_states(token_hash,org_id,user_id,verifier,expires_at) VALUES($1,$2,$3,$4,now()+interval '10 minutes')", [hash(state), orgId, req.user.id, verifier]);
-        const params = new URLSearchParams({ response_type: "code", client_id: config.mpClientId,
-            redirect_uri: config.url + "/api/payments/connect/callback", state, code_challenge: createHash("sha256").update(verifier).digest("base64url"), code_challenge_method: "S256" });
-        res.json({ url: "https://auth.mercadopago.com/authorization?" + params });
-    });
-    app.get("/api/payments/connect/callback", authenticated, async (req, res) => {
-        const input = z.object({ state: z.string().max(200), code: z.string().max(1000) }).parse(req.query);
-        const { rows: [state] } = await db.query("DELETE FROM oauth_states WHERE token_hash=$1 AND user_id=$2 AND expires_at>now() RETURNING *", [hash(input.state), req.user.id]);
-        requireValue(state, 400, "A conexão expirou. Tente novamente pelo painel.");
-        await member(db, req.user.id, state.org_id, ["owner"]);
-        const result = await adapter("mercadopago").connect(input.code, state.verifier);
-        await db.query("UPDATE organizations SET mp_user_id=$2,mp_access_token=$3,mp_refresh_token=$4,mp_expires_at=$5 WHERE id=$1",
-            [state.org_id, String(result.user_id), seal(result.access_token, config), seal(result.refresh_token, config), new Date(Date.now() + result.expires_in * 1000)]);
-        res.redirect(303, "/admin.html?conectado=1");
-    });
-    app.post("/api/webhooks/mercadopago", async (req, res) => {
-        requireValue(verifyWebhook(req, config), 401, "Assinatura inválida.");
-        const orgId = uuid.parse(req.query.org);
-        const payment = await adapter("mercadopago").payment(orgId, req.query["data.id"]);
-        const { rows: [org] } = await db.query("SELECT mp_user_id FROM organizations WHERE id=$1", [orgId]);
-        requireValue(org && org.mp_user_id === payment.collectorId && payment.live === config.mpProduction, 400, "Pagamento fora da conta ou do ambiente esperado.");
-        await store.applyPayment(orgId, payment);
-        res.json({ ok: true });
-    });
-
     app.get("/api/notices", authenticated, async (req, res) => {
         const { rows } = await db.query("SELECT * FROM notices WHERE user_id=$1 ORDER BY created_at DESC LIMIT 100", [req.user.id]);
         res.json(rows);
@@ -271,7 +227,7 @@ export function createApp({ db, config, provider, sendEmail }) {
         next();
     });
     app.get("/api/platform", async (req, res) => {
-        const { rows: organizations } = await db.query("SELECT id,name,fee_bps,fee_mode,mp_user_id,stripe_account_id,stripe_ready FROM organizations ORDER BY created_at");
+        const { rows: organizations } = await db.query("SELECT id,name,fee_bps,fee_mode,stripe_account_id,stripe_ready FROM organizations ORDER BY created_at");
         const { rows: failedJobs } = await db.query("SELECT id,kind,status,attempts,last_error,created_at FROM jobs WHERE status='failed' ORDER BY created_at DESC LIMIT 100");
         res.json({ organizations, failedJobs });
     });

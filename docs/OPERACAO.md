@@ -1,41 +1,18 @@
-> Atualização: o checkout no aplicativo com Pix e carteiras digitais usa Stripe Connect. Siga [STRIPE.md](STRIPE.md) para ativar. As instruções Mercado Pago abaixo continuam válidas para o provedor anterior.
-
 # Ativação e operação
 
-## Configuração necessária para a primeira venda
+## Configuração inicial
 
-1. Crie um PostgreSQL gerenciado de produção e um banco separado para homologação. Copie a conexão com pooling e TLS para `DATABASE_URL`. Rode `npm run migrate` com as variáveis desse ambiente. Não execute o seed em produção.
-2. Na hospedagem, configure `NODE_ENV=production`, `APP_URL=https://seu-dominio`, `PAYMENT_PROVIDER=mercadopago` e `PLATFORM_OWNER_EMAIL` com seu e-mail real. Use um e-mail protegido por autenticação em duas etapas no provedor de e-mail.
-3. Gere `ENCRYPTION_KEY` com 32 bytes aleatórios em hexadecimal (64 caracteres). Guarde uma cópia protegida junto do procedimento de recuperação. A chave cifra os tokens dos organizadores e assina ingressos; alterá-la invalida os códigos existentes e impede a leitura dos tokens antigos.
-4. Crie um remetente de e-mail no Resend, valide o domínio e configure `RESEND_API_KEY` e `EMAIL_FROM`. Teste recebimento, spam, link de uso único e acesso em outro aparelho. Links nunca aparecem na resposta da API; só são impressos no terminal de desenvolvimento.
-5. Configure a aplicação de marketplace no Mercado Pago, conforme os passos abaixo. Use primeiro contas e credenciais de teste.
-6. Gere chaves com `npm run push:keys`. Configure `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` e `VAPID_SUBJECT=mailto:seu-contato`. Guarde a chave privada. Teste uma notificação com o app fechado em um aparelho real.
-7. Gere um `CRON_SECRET` aleatório longo e configure o agendamento de tarefas descrito abaixo.
-8. Complete `privacidade.html` e `termos.html` com a identificação real do operador, atendimento, retenção e condições comerciais. Cada evento deve ter local, datas, capa, contato, classificação/regras de acesso e política de reembolso corretos. Informe no texto do evento qualquer comprovação exigida para categoria estudantil.
-9. Entre com o e-mail administrador. Crie sua organização, conecte o recebedor por **Conectar Mercado Pago** e defina a comissão em **Administração da plataforma**. A comissão começa pendente; vendas pagas não são publicadas até sua definição.
-10. Conclua a homologação abaixo. Depois selecione `MERCADOPAGO_ENV=production`, use as credenciais do ambiente correspondente e faça uma compra de pequeno valor e seu estorno antes de divulgar o evento.
-
-As variáveis estão descritas em `.env.example`. Configure-as como segredos na hospedagem; não as envie ao GitHub. O front recebe apenas a chave pública VAPID e o estado da configuração.
-
-## Mercado Pago
-
-O adaptador usa **Checkout Pro pela API de preferências**, com `marketplace_fee`, OAuth do vendedor e split 1:1. Não substitua pelo endpoint Orders sem reavaliar a compatibilidade do split. Veja a [integração oficial](https://www.mercadopago.com.br/developers/pt/docs/split-payments/split-1-1/integration-configuration/integrate-marketplace).
-
-- Cadastre o domínio e a URL de redirecionamento exata: `https://seu-dominio/api/payments/connect/callback`.
-- Configure `MERCADOPAGO_CLIENT_ID`, `MERCADOPAGO_CLIENT_SECRET` e o segredo de assinatura em `MERCADOPAGO_WEBHOOK_SECRET`.
-- Habilite notificações de **pagamentos**. A preferência envia `notification_url=https://seu-dominio/api/webhooks/mercadopago?org=<UUID da organização>`; preserve o parâmetro `org`. Se usar o simulador do painel, inclua um pagamento real de teste dessa organização e esse parâmetro.
-- Use contas de teste distintas para integrador, vendedor e comprador, com os requisitos de OAuth e split do provedor. Conecte o vendedor pelo próprio painel da Invicta.
-- `MERCADOPAGO_ENV=sandbox` verifica que o recebedor é um usuário de teste e usa `init_point`, conforme o fluxo de contas de teste do Checkout Pro. O webhook recusa `live_mode=true`. Produção exige o ambiente correspondente. Não misture contas, tokens e assinaturas.
-- O checkout limita a uma parcela e exclui boleto. O provedor decide quais meios estão disponíveis para o recebedor. Nenhum dado de cartão passa pela API Invicta.
-- A aprovação depende de assinatura HMAC, consulta independente do pagamento e correspondência de organização, conta, ambiente, valor e BRL. Parâmetros recebidos no retorno do checkout não aprovam o pedido.
-
-A conciliação consulta `/v1/payments/search` por `external_reference`, conforme a [API de gestão de pagamentos](https://www.mercadopago.com.br/developers/pt/docs/subscriptions/additional-content/payment-management). Ela reconsulta pequenos lotes de pedidos com checkout dos últimos 180 dias, no máximo uma vez a cada dez minutos por pedido, priorizando os menos consultados. Em volume maior, aumente a capacidade do worker e monitore a defasagem; o webhook é o caminho principal.
+1. Configure PostgreSQL com pooling em DATABASE_URL e aplique as migrações com npm run migrate antes de operar.
+2. Configure NODE_ENV=production, APP_URL com o endereço HTTPS e PLATFORM_OWNER_EMAIL com seu e-mail. Produção usa Stripe como único provedor real.
+3. Gere e preserve ENCRYPTION_KEY: ela assina os ingressos e não deve mudar quando o provedor for alterado. Configure Resend, remetente, VAPID e CRON_SECRET.
+4. Siga [STRIPE.md](STRIPE.md) para conta da plataforma, contas conectadas, chaves, webhook, Pix, carteiras e homologação.
+5. Crie a organização, configure recebimento e comissão, cadastre evento e lotes e conclua os testes antes da publicação comercial.
 
 ## Hospedagem e tarefas
 
 O repositório inclui `vercel.json`: build `npm run build`, estáticos em `dist/` e função em `api/index.js`. A função usa PostgreSQL externo. As migrações são uma etapa explícita de implantação; a função não altera o schema ao atender usuários.
 
-O endereço antigo no GitHub Pages encaminha para `site-invicta.vercel.app` por `hosting.js`. GitHub Pages não executa a API Node. Se mudar o domínio principal, atualize esse encaminhamento junto das variáveis e URLs do Mercado Pago.
+O endereço antigo no GitHub Pages encaminha para `site-invicta.vercel.app` por `hosting.js`. GitHub Pages não executa a API Node. Se mudar o domínio principal, atualize esse encaminhamento junto das variáveis, webhook e domínios de pagamento da Stripe.
 
 No estado sem banco/chave configurados, `/api/health` responde `ready:false` e o site informa que as vendas ainda não foram abertas. Em produção não existe botão que aprove pagamento local.
 

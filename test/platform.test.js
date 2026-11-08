@@ -1,11 +1,10 @@
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
-import { randomUUID, createHmac } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { configuration } from "../server/config.js";
 import { database, migrate, localKey } from "../server/db.js";
 import { createApp } from "../server/app.js";
-import { hash, token, seal } from "../server/security.js";
-import { payments } from "../server/payments.js";
+import { hash, token } from "../server/security.js";
 import { Pool } from "pg";
 import Stripe from "stripe";
 import { stripePayments } from "../server/stripe.js";
@@ -18,7 +17,7 @@ let owner, buyer, outsider;
 let bootstrap, testSchema;
 before(async () => {
     config = configuration({ production: false, localPath: ":memory:", databaseUrl: "", ownerEmail: "owner@invicta.test", paymentProvider: "mock",
-        encryptionKey: "11".repeat(32), mpWebhookSecret: "webhook-test", feeBps: null, mpProduction: false, cronSecret: "cron-test" });
+        encryptionKey: "11".repeat(32), feeBps: null, cronSecret: "cron-test" });
     if (process.env.TEST_DATABASE_URL) {
         bootstrap = new Pool({ connectionString: process.env.TEST_DATABASE_URL, max: 1 });
         testSchema = "invicta_test_" + randomUUID().replaceAll("-", "");
@@ -88,6 +87,29 @@ async function order(f, user = buyer, quantity = 1, key = randomUUID()) {
 async function pay(f, value, paymentId = randomUUID()) {
     return runtime.store.applyPayment(f.org.id, { id: paymentId, orderId: value.id, amount: value.total_cents, currency: "BRL", status: "approved", fee: 100 });
 }
+
+test("produção seleciona Stripe mesmo com configuração antiga de provedor na hospedagem", () => {
+    const previousNode = process.env.NODE_ENV, previousProvider = process.env.PAYMENT_PROVIDER;
+    try {
+        process.env.NODE_ENV = "production";
+        process.env.PAYMENT_PROVIDER = "removed-provider";
+        assert.equal(configuration({ url: "https://invicta.test" }).paymentProvider, "stripe");
+    } finally {
+        if (previousNode === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = previousNode;
+        if (previousProvider === undefined) delete process.env.PAYMENT_PROVIDER; else process.env.PAYMENT_PROVIDER = previousProvider;
+    }
+});
+
+test("estrutura antiga é removida e pedidos de provedor desativado não iniciam cobrança", async () => {
+    const columns = (await db.query("SELECT column_name FROM information_schema.columns WHERE table_name IN ('organizations','orders') AND table_schema=current_schema()")).rows.map((row) => row.column_name);
+    assert.equal(columns.some((name) => name.startsWith("mp_") || ["preference_id", "checkout_url"].includes(name)), false);
+    assert.equal((await call("/payments/connect", owner, { orgId: randomUUID() })).status, 404);
+    const f = await fixture();
+    const purchase = (await order(f)).data;
+    await db.query("UPDATE orders SET payment_provider='disabled-provider' WHERE id=$1", [purchase.id]);
+    assert.equal((await call("/orders/" + purchase.id + "/checkout", buyer, {})).status, 409);
+    assert.equal((await call("/orders/" + purchase.id + "/payment-session", buyer, { method: "pix" })).status, 409);
+});
 
 test("Stripe separa Pix e cartões, desconta comissão e reutiliza sessões sem duplicar cobrança", async () => {
     const f = await fixture();
@@ -165,7 +187,7 @@ test("Stripe protege sessão privada e só emite ingresso após webhook assinado
         assert.equal((await webhook({ ...event, livemode: true })).status, 400);
         payment = { ...payment, amount: 1 };
         assert.equal((await webhook(event)).status, 400);
-        payment = { ...payment, amount: value.total_cents, provider: "mercadopago" };
+        payment = { ...payment, amount: value.total_cents, provider: "disabled-provider" };
         assert.equal((await webhook(event)).status, 400);
         payment = { ...payment, provider: "stripe" };
         assert.equal((await webhook(event)).status, 200);
@@ -279,35 +301,16 @@ test("eventos gratuitos emitem ingresso sem cobrança", async () => {
     assert.equal(purchase.data.status, "paid");
     assert.equal((await call("/orders/" + purchase.data.id, buyer)).data.tickets.length, 1);
 });
-test("webhook confere assinatura, conta, valor e resiste a repetição", async () => {
-    const f = await fixture();
-    const purchase = (await order(f)).data;
-    await db.query("UPDATE organizations SET mp_user_id='collector-test' WHERE id=$1", [f.org.id]);
-    providerPayments.set("12345", { id: "12345", orderId: purchase.id, amount: purchase.total_cents, currency: "BRL", status: "approved", collectorId: "collector-test", live: false, fee: 50 });
-    const timestamp = String(Date.now()), requestId = randomUUID();
-    const digest = createHmac("sha256", config.mpWebhookSecret).update("id:12345;request-id:" + requestId + ";ts:" + timestamp + ";").digest("hex");
-    const path = "/webhooks/mercadopago?org=" + f.org.id + "&data.id=12345";
-    assert.equal((await call(path, null, {}, "POST")).status, 401);
-    const headers = { "x-signature": "ts=" + timestamp + ",v1=" + digest, "x-request-id": requestId };
-    assert.equal((await call(path, null, {}, "POST", headers)).status, 200);
-    assert.equal((await call(path, null, {}, "POST", headers)).status, 200);
-    assert.equal((await call("/orders/" + purchase.id, buyer)).data.tickets.length, 1);
-    const original = providerPayments.get("12345");
-    for (const invalid of [{ collectorId: "other-account" }, { live: true }, { amount: purchase.total_cents + 1 }, { currency: "USD" }]) {
-        providerPayments.set("12345", { ...original, ...invalid });
-        assert.equal((await call(path, null, {}, "POST", headers)).status, 400);
-    }
-    providerPayments.set("12345", original);
-});
 test("conciliação recupera pagamento sem webhook e depois revoga contestação", async () => {
     const f = await fixture();
     const purchase = (await order(f)).data;
-    await db.query("UPDATE organizations SET mp_user_id='reconcile-collector' WHERE id=$1", [f.org.id]);
-    await db.query("UPDATE orders SET preference_id='test-preference' WHERE id=$1", [purchase.id]);
+    await db.query("UPDATE organizations SET stripe_account_id='reconcile-collector' WHERE id=$1", [f.org.id]);
+    await db.query("UPDATE orders SET payment_provider='stripe' WHERE id=$1", [purchase.id]);
+    await db.query("INSERT INTO checkout_sessions(order_id,method,session_id) VALUES($1,'pix',$2)", [purchase.id, "cs_" + purchase.id]);
     const payment = { id: "reconcile-payment", orderId: purchase.id, amount: purchase.total_cents, currency: "BRL", status: "approved", collectorId: "reconcile-collector", live: false, fee: 50 };
     providerPayments.set(payment.id, payment);
     const previous = config.paymentProvider;
-    config.paymentProvider = "mercadopago";
+    config.paymentProvider = "stripe";
     try {
         await runtime.tasks();
         assert.equal((await call("/orders/" + purchase.id, buyer)).data.status, "paid");
@@ -349,25 +352,6 @@ test("pedido de reembolso é privado, analisado uma vez e revoga o ingresso", as
     assert.equal((await call("/manage/refunds/" + requestId, owner, { approve: true, reason: "Devolução aprovada" })).status, 409);
     await runtime.delivery.run(100);
     assert.equal((await call("/orders/" + purchase.id, buyer)).data.status, "refunded");
-});
-test("adaptador Mercado Pago envia comissão e total ao checkout", async () => {
-    const f = await fixture();
-    const purchase = (await order(f)).data;
-    await db.query("UPDATE organizations SET mp_access_token=$2,mp_refresh_token=$3,mp_expires_at=now()+interval '1 day' WHERE id=$1", [f.org.id, seal("test-access", config), seal("test-refresh", config)]);
-    let payload;
-    const gateway = payments(db, config, async (url, options) => {
-        if (url.endsWith("/users/me")) return new Response(JSON.stringify({ tags: ["test_user"] }));
-        payload = JSON.parse(options.body);
-        return new Response(JSON.stringify({ id: "preference", init_point: "https://www.mercadopago.com.br/checkout/test", sandbox_init_point: "https://sandbox.mercadopago.com.br/checkout/test" }), { status: 200 });
-    });
-    const result = await gateway.checkout(purchase, f.event, f.org);
-    assert.equal(result.id, "preference");
-    assert.equal(result.url, "https://www.mercadopago.com.br/checkout/test");
-    assert.equal(payload.items[0].unit_price, 50);
-    assert.equal(payload.marketplace_fee, 2.5);
-    assert.equal(payload.external_reference, purchase.id);
-    const realSeller = payments(db, config, async () => new Response(JSON.stringify({ tags: ["normal"] })));
-    await assert.rejects(() => realSeller.checkout(purchase, f.event, f.org), /vendedor de teste/);
 });
 test("Web Push rejeita destinos arbitrários e jobs requerem segredo", async () => {
     assert.equal((await call("/push", buyer, { endpoint: "https://127.0.0.1/secret", keys: { p256dh: "a".repeat(70), auth: "b".repeat(24) } })).status, 400);

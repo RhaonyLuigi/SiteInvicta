@@ -104,16 +104,15 @@ async function render() {
     byId("sold").textContent = summary.summary.tickets;
     byId("gross").textContent = money(summary.summary.gross_cents);
     byId("net").textContent = money(Number(summary.summary.gross_cents) - Number(summary.summary.platform_cents) - Number(summary.summary.provider_cents));
-    const stripe = data.paymentProvider === "stripe";
-    byId("receiving-status").textContent = stripe ? (current.stripe_ready ? "Recebimento com Pix e cartões habilitado" : current.stripe_account_id ? "Cadastro de recebimento em análise ou incompleto" : "Cadastre a conta que receberá suas vendas pela Stripe") : current.mp_user_id ? "Conta Mercado Pago conectada" : "Conecte a conta que receberá os pagamentos.";
+    byId("receiving-status").textContent = (current.stripe_ready ? "Recebimento com Pix e cartões habilitado" : current.stripe_account_id ? "Cadastro de recebimento em análise ou incompleto" : "Cadastre a conta que receberá suas vendas pela Stripe");
     byId("commission-status").textContent = current.fee_bps === null ? "Comissão pendente de configuração pela plataforma." : "Comissão " + (current.fee_bps / 100).toFixed(2) + "% · " + (current.fee_mode === "added" ? "acrescida ao comprador" : "descontada do organizador");
     const receiving = byId("receiving-actions");
     receiving.replaceChildren();
-    if (current.role === "owner") receiving.append(button(stripe ? "Configurar recebimento" : "Conectar Mercado Pago", async () => {
-        const result = await api(stripe ? "/payments/stripe/onboard" : "/payments/connect", { method: "POST", body: { orgId: current.id } });
+    if (current.role === "owner") receiving.append(button("Configurar recebimento", async () => {
+        const result = await api("/payments/stripe/onboard", { method: "POST", body: { orgId: current.id } });
         location.assign(result.url);
     }));
-    if (stripe && current.stripe_account_id && current.role === "owner") receiving.append(button("Verificar cadastro", async () => {
+    if (current.stripe_account_id && current.role === "owner") receiving.append(button("Verificar cadastro", async () => {
         const result = await api("/payments/stripe/status", { method: "POST", body: { orgId: current.id } });
         await load(current.id); message(result.ready ? "Recebimento habilitado." : "Conclua o cadastro e habilite Pix no painel Stripe.");
     }, true));

@@ -35,7 +35,7 @@ export function commerce(db, config) {
             const bps = org.fee_bps ?? config.feeBps;
             if (lot.price_cents > 0) {
                 requireValue(bps !== null, 409, "A comissão da plataforma precisa ser definida antes da venda.");
-                requireValue(config.paymentProvider === "mock" || (config.paymentProvider === "stripe" ? org.stripe_ready : org.mp_access_token), 409, "O organizador precisa configurar o recebimento.");
+                requireValue(config.paymentProvider === "mock" || org.stripe_ready, 409, "O organizador precisa configurar o recebimento.");
             }
             const counts = await stock(client, event.id, lot.id);
             requireValue(quantity <= lot.capacity - counts.lot_used && quantity <= event.capacity - counts.event_used, 409, "A quantidade escolhida ficou indisponível.");
@@ -153,7 +153,6 @@ export function commerce(db, config) {
         await db.query("UPDATE orders SET status='expired' WHERE status='pending' AND expires_at<now()");
         await db.query("DELETE FROM sessions WHERE expires_at<now()");
         await db.query("DELETE FROM login_links WHERE expires_at<now()");
-        await db.query("DELETE FROM oauth_states WHERE expires_at<now()");
         await db.query("DELETE FROM rate_limits WHERE expires_at<now()");
         const { rows } = await db.query(`
             SELECT DISTINCT o.user_id,e.id,e.name FROM orders o JOIN events e ON e.id=o.event_id

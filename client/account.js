@@ -52,16 +52,16 @@ function renderWallet(orders, offline = false) {
             element("p", order.quantity + " ingresso(s) · " + order.category), element("p", labels[order.status] || order.status, "order-state"),
             element("p", "Total " + money(order.total_cents), "price-small"));
         if (order.fee_mode === "added") card.append(element("p", "Inclui " + money(order.fee_cents) + " de taxa da plataforma.", "field-help"));
-        if (order.status === "pending" && !offline) {
+        if (order.status === "pending" && !offline && ["stripe", "mock"].includes(order.payment_provider)) {
             card.append(element("p", "Reserva até " + date(order.expires_at), "field-help"));
-            card.append(button(order.payment_provider === "stripe" ? "Pagar com Pix ou cartão" : "Continuar pagamento", async () => {
+            card.append(button(order.payment_provider === "stripe" ? "Pagar com Pix ou cartão" : "Pagamento local de teste", async () => {
                 if (order.payment_provider === "stripe") return openPayment(order);
                 const result = await api("/orders/" + order.id + "/checkout", { method: "POST" });
                 if (result.local) {
                     message("Ambiente local. Use a confirmação local para testar a emissão.");
                     return;
                 }
-                location.assign(result.url);
+                throw new Error("Forma de pagamento indisponível. Atualize seus pedidos.");
             }));
             if (health.local && health.paymentProvider === "mock") card.append(button("Confirmar pagamento local", async () => {
                 await api("/orders/" + order.id + "/local-payment", { method: "POST" });

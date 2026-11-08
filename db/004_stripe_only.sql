@@ -1,0 +1,10 @@
+UPDATE orders SET status='expired',checkout_lease_until=NULL WHERE payment_provider NOT IN ('stripe','mock') AND status='pending';
+ALTER TABLE orders ALTER COLUMN payment_provider SET DEFAULT 'stripe';
+DROP TABLE IF EXISTS oauth_states;
+ALTER TABLE organizations DROP COLUMN IF EXISTS mp_access_token;
+ALTER TABLE organizations DROP COLUMN IF EXISTS mp_refresh_token;
+ALTER TABLE organizations DROP COLUMN IF EXISTS mp_expires_at;
+ALTER TABLE organizations DROP COLUMN IF EXISTS mp_user_id;
+ALTER TABLE orders DROP COLUMN IF EXISTS preference_id;
+ALTER TABLE orders DROP COLUMN IF EXISTS checkout_url;
+CREATE INDEX IF NOT EXISTS orders_stripe_reconciliation_idx ON orders(reconciled_at,created_at) WHERE payment_provider='stripe';

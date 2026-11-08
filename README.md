@@ -2,7 +2,7 @@
 
 Venda de ingressos e gestão de eventos da Atlética Invicta de Biologia UCB. Site responsivo, aplicativo instalável (PWA), API Node.js e PostgreSQL.
 
-O fluxo local funciona sem serviços pagos. O checkout no app usa Stripe Connect: Pix como primeira opção, cartões e Apple Pay/Google Pay quando disponíveis, com comissão automática. O adaptador Mercado Pago permanece para pedidos anteriores. Banco, e-mail, credenciais de pagamento, Web Push e agendamento precisam ser configurados na hospedagem para ativar a operação real. O servidor de produção recusa pagamentos simulados. Consulte [a ativação do Pix e das carteiras](docs/STRIPE.md).
+O fluxo local funciona sem serviços pagos. O checkout no app usa Stripe Connect: Pix como primeira opção, cartões e Apple Pay/Google Pay quando disponíveis, com comissão automática. Banco, e-mail, credenciais de pagamento, Web Push e agendamento precisam ser configurados na hospedagem para ativar a operação real. O servidor de produção recusa pagamentos simulados. Consulte [a ativação do Pix e das carteiras](docs/STRIPE.md).
 
 ## Rodar no computador
 
@@ -28,8 +28,8 @@ Abra `http://localhost:3000`. O PostgreSQL de desenvolvimento é persistido em `
 
 - Acesso por link de e-mail de uso único, sessão em cookie HttpOnly e permissões por organização.
 - Eventos em rascunho, publicação, pausa, edição, cancelamento e lotes por período, categoria, preço e capacidade.
-- Reservas de 30 minutos na Stripe (15 no Mercado Pago/local), valores definidos no servidor, estoque transacional e repetição segura de pedidos.
-- Cadastro do organizador pela Stripe Connect; cobrança na conta conectada e comissão automática configurável incluída ou acrescida. Mercado Pago mantém OAuth/PKCE e tokens criptografados.
+- Reservas de 30 minutos na Stripe (15 no teste local), valores definidos no servidor, estoque transacional e repetição segura de pedidos.
+- Cadastro do organizador pela Stripe Connect; cobrança na conta conectada e comissão automática configurável incluída ou acrescida.
 - Confirmação por webhook assinado, conferência do pagamento no provedor, conciliação e emissão de QR Code assinado.
 - Carteira de ingressos, consulta offline, instalação, avisos na conta, e-mail, Web Push e lembrete nas 24 horas anteriores.
 - Equipe com funções de responsável, gestão e portaria; convites vinculados ao e-mail; exportação CSV de participantes.
@@ -52,7 +52,6 @@ Para ativar Web Push, gere as chaves com `npm run push:keys`, configure as três
 | `server/auth.js` | Links de acesso, sessões e identificação |
 | `server/commerce.js` | Reserva, estoque, pagamento, ingresso e check-in |
 | `server/organizers.js` | Organizações, equipe, eventos, lotes e reembolsos |
-| `server/payments.js` | Adaptador Mercado Pago, OAuth e assinatura de webhook |
 | `server/stripe.js` | Conta conectada, Pix/cartões no app, comissão, consulta e estorno Stripe |
 | `client/checkout.js` | Formulário seguro Stripe e carteiras compatíveis |
 | `server/notifications.js` | Fila de e-mails, pushes e estornos |

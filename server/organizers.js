@@ -42,7 +42,7 @@ export function organizerRouter(db, config, store) {
     }
     router.get("/", async (req, res) => {
         const { rows: organizations } = await db.query(
-            "SELECT o.id,o.name,o.fee_bps,o.fee_mode,o.mp_user_id,o.stripe_account_id,o.stripe_ready,m.role FROM organizations o JOIN members m ON m.org_id=o.id WHERE m.user_id=$1 ORDER BY o.created_at",
+            "SELECT o.id,o.name,o.fee_bps,o.fee_mode,o.stripe_account_id,o.stripe_ready,m.role FROM organizations o JOIN members m ON m.org_id=o.id WHERE m.user_id=$1 ORDER BY o.created_at",
             [req.user.id]
         );
         const { rows: events } = await db.query(
@@ -177,7 +177,7 @@ export function organizerRouter(db, config, store) {
                 const { rows: [org] } = await client.query("SELECT * FROM organizations WHERE id=$1", [event.org_id]);
                 if (lots.some((lot) => lot.price_cents > 0)) {
                     requireValue((org.fee_bps ?? config.feeBps) !== null, 409, "Defina a comissão da plataforma antes de publicar vendas.");
-                    requireValue(config.paymentProvider === "mock" || (config.paymentProvider === "stripe" ? org.stripe_ready : org.mp_access_token), 409, "Conecte a conta de recebimento antes de publicar.");
+                    requireValue(config.paymentProvider === "mock" || org.stripe_ready, 409, "Conecte a conta de recebimento antes de publicar.");
                 }
             }
             await client.query("UPDATE events SET status=$2,updated_at=now() WHERE id=$1", [event.id, status]);
