@@ -61,6 +61,8 @@ Depois, peça reembolso pela conta do comprador e aprove pelo organizador. Confi
 
 Somente depois da homologação, substitua pelas chaves `sk_live_...` e `pk_live_...`, configure `STRIPE_ENV=production` e crie o destino Connect **de produção**, com seu próprio `whsec_...`. Faça novo deploy. Contas conectadas e domínios precisam estar habilitados no ambiente real. Finalize o cadastro real de recebimento, publique termos/contato e configure o agendamento de `/api/jobs` conforme OPERACAO.md. Não alterne teste/produção enquanto houver pedidos de teste aguardando processamento; conclua ou cancele-os antes da transição.
 
+Contas conectadas de teste não se convertem em contas reais. A ligação de recebimento é única por organização nesta versão: para a operação real, crie **uma nova organização na Invicta**, configure sua comissão e use Configurar recebimento com as chaves reais já ativas. Cadastre o evento real nessa organização. Preserve o cadastro e os registros de teste como histórico; não tente reconectar o identificador de teste usando chaves reais. Para manter homologação e produção simultaneamente, use projetos Vercel e bancos separados, cada um com suas próprias variáveis e webhook.
+
 ## Operação e limites
 
 - A reserva Stripe dura 30 minutos. O Pix é criado com validade de 30 minutos a partir de sua confirmação; o código pode continuar válido no banco depois que a reserva acabar. Um pagamento tardio só emite ingresso se ainda houver capacidade. Caso contrário, inicia estorno, sem vender acima do estoque.
