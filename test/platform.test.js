@@ -111,6 +111,33 @@ test("estrutura antiga é removida e pedidos de provedor desativado não iniciam
     assert.equal((await call("/orders/" + purchase.id + "/payment-session", buyer, { method: "pix" })).status, 409);
 });
 
+test("cadastro Stripe usa Accounts v2 com e-mail autenticado e reaproveita a conta ao renovar o link", async () => {
+    const f = await fixture();
+    const created = [], links = [];
+    const accountId = "acct_" + randomUUID();
+    const stripeConfig = { ...config, stripeSecret: "sk_test_fixture", stripePublic: "pk_test_fixture" };
+    const sdk = { v2: { core: {
+        accounts: { create: async (body, options) => { created.push({ body, options }); return { id: accountId }; } },
+        accountLinks: { create: async (body) => { links.push(body); return { url: "https://connect.stripe.com/setup/test" }; } }
+    } } };
+    const adapter = stripePayments(db, stripeConfig, sdk);
+    await assert.rejects(adapter.onboard(f.org.id), /e-mail do responsável/);
+    assert.equal((await adapter.onboard(f.org.id, owner)).url, "https://connect.stripe.com/setup/test");
+    await adapter.onboard(f.org.id, owner);
+    assert.equal(created.length, 1);
+    assert.equal(created[0].body.contact_email, owner.email);
+    assert.equal(created[0].body.dashboard, "full");
+    assert.equal(created[0].body.identity.country, "BR");
+    assert.equal(created[0].body.configuration.merchant.capabilities.card_payments.requested, true);
+    assert.equal(created[0].body.defaults.responsibilities.fees_collector, "stripe");
+    assert.equal(links.length, 2);
+    assert.equal(links[0].account, accountId);
+    assert.equal(links[0].use_case.type, "account_onboarding");
+    assert.equal(links[0].use_case.account_onboarding.return_url, config.url + "/admin.html?recebimento=verificar");
+    sdk.v2.core.accountLinks.create = async () => ({ url: "https://stripe.com.evil.test/setup" });
+    await assert.rejects(adapter.onboard(f.org.id, owner), /Endereço de cadastro inválido/);
+});
+
 test("Stripe separa Pix e cartões, desconta comissão e reutiliza sessões sem duplicar cobrança", async () => {
     const f = await fixture();
     const value = (await order(f)).data;
@@ -164,6 +191,7 @@ test("Stripe protege sessão privada e só emite ingresso após webhook assinado
     const stripeConfig = { ...config, paymentProvider: "stripe", stripeSecret: "sk_test_fixture", stripePublic: "pk_test_fixture", stripeWebhookSecret: "whsec_fixture", stripeProduction: false };
     let payment = { provider: "stripe", id: "pi_" + randomUUID(), orderId: value.id, collectorId: accountId, amount: value.total_cents, currency: "BRL", status: "approved", live: false };
     const stripeRuntime = createApp({ db, config: stripeConfig, provider: {
+        onboard: async (orgId, user) => { assert.equal(orgId, f.org.id); assert.equal(user.email, owner.email); return { url: "https://connect.stripe.com/setup/test" }; },
         checkout: async (o, event, org, user, method) => { assert.equal(o.total_cents, 5000); return { clientSecret: "cs_private", method }; },
         payment: async () => payment
     } });
@@ -176,6 +204,8 @@ test("Stripe protege sessão privada e só emite ingresso após webhook assinado
         return { status: response.status, data: await response.json() };
     };
     try {
+        assert.equal((await request("/payments/stripe/onboard", { orgId: f.org.id }, buyer)).status, 403);
+        assert.equal((await request("/payments/stripe/onboard", { orgId: f.org.id, email: "fake@example.com" }, owner)).data.url, "https://connect.stripe.com/setup/test");
         const path = "/orders/" + value.id + "/payment-session";
         assert.equal((await request(path, { method: "pix" }, outsider)).status, 404);
         assert.equal((await request(path, { method: "cash" })).status, 400);

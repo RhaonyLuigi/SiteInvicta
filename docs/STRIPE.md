@@ -6,7 +6,7 @@ O novo fluxo usa Stripe Connect com cobrança direta na conta conectada do organ
 
 Crie sua conta brasileira em https://dashboard.stripe.com/register e configure Connect para uma plataforma que vende ingressos para organizadores. Complete pessoalmente a identificação, dados bancários e termos pedidos pela Stripe. Confirme no painel/suporte que sua atividade, seu modelo de comissão e as contas conectadas brasileiras podem usar Pix. Pix está sujeito à elegibilidade e à categoria do negócio: não classifique a atividade como outra para contornar restrições. Não abra vendas antes dessa confirmação.
 
-O código cria contas conectadas Standard brasileiras, com painel próprio. O organizador conclui o cadastro hospedado pela Stripe e informa sua conta bancária lá. Não basta cadastrar uma chave Pix arbitrária: recebimento dividido exige a identificação e aprovação do recebedor. O organizador recebe o saldo após a comissão da plataforma e as taxas do provedor, segundo o prazo de repasse da Stripe. Sua comissão chega ao saldo da conta da plataforma.
+O código cria contas brasileiras pela Accounts v2, com painel Stripe completo e cobranças diretas. O e-mail de contato é o do responsável autenticado. O cadastro inicial solicita cartões; habilite Pix na conta conectada após verificar sua elegibilidade. O organizador conclui o cadastro hospedado pela Stripe e informa sua conta bancária lá. Não basta cadastrar uma chave Pix arbitrária: recebimento dividido exige a identificação e aprovação do recebedor. O organizador recebe o saldo após a comissão da plataforma e as taxas do provedor, segundo o prazo de repasse da Stripe. Sua comissão chega ao saldo da conta da plataforma.
 
 ## 2. Chaves de teste na Vercel
 

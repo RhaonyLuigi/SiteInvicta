@@ -43,19 +43,24 @@ export function stripePayments(db, config, suppliedClient) {
     }
     return {
         sdk, payment, syncAccount,
-        async onboard(orgId) {
+        async onboard(orgId, user) {
+            requireValue(user?.email, 400, "Entre com o e-mail do responsável para configurar o recebimento.");
             let { rows: [org] } = await db.query("SELECT * FROM organizations WHERE id=$1", [orgId]);
             requireValue(org, 404, "Organização não encontrada.");
             if (!org.stripe_account_id) {
-                const account = await sdk().accounts.create({ type: "standard", country: "BR",
-                    capabilities: { card_payments: { requested: true }, transfers: { requested: true }, pix_payments: { requested: true } },
-                    metadata: { org_id: orgId }, business_profile: { product_description: "Venda de ingressos de eventos" } },
-                { idempotencyKey: "org:" + orgId });
+                const account = await sdk().v2.core.accounts.create({ contact_email: user.email,
+                    display_name: org.name, identity: { country: "BR" }, dashboard: "full",
+                    defaults: { currency: "brl", responsibilities: { fees_collector: "stripe", losses_collector: "stripe" } },
+                    configuration: { merchant: { capabilities: { card_payments: { requested: true } } } },
+                    metadata: { org_id: orgId } },
+                { idempotencyKey: "org-v2:" + orgId });
                 await db.query("UPDATE organizations SET stripe_account_id=$2 WHERE id=$1 AND stripe_account_id IS NULL", [orgId, account.id]);
                 org = await organization(orgId);
             }
-            const link = await sdk().accountLinks.create({ account: org.stripe_account_id, type: "account_onboarding",
-                refresh_url: config.url + "/admin.html?recebimento=retomar", return_url: config.url + "/admin.html?recebimento=verificar" });
+            const link = await sdk().v2.core.accountLinks.create({ account: org.stripe_account_id,
+                use_case: { type: "account_onboarding", account_onboarding: {
+                    refresh_url: config.url + "/admin.html?recebimento=retomar", return_url: config.url + "/admin.html?recebimento=verificar"
+                } } });
             requireValue(new URL(link.url).protocol === "https:" && new URL(link.url).hostname.endsWith(".stripe.com"), 502, "Endereço de cadastro inválido.");
             return { url: link.url };
         },

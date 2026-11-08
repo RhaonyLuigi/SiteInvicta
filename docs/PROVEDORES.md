@@ -12,7 +12,7 @@ Minha recomendação é começar com Neon para desenvolvimento e escolher um pla
 
 ## Recebimento e comissão
 
-A Stripe Connect é o único provedor real integrado. O organizador cadastra uma conta Standard, os pagamentos são cobranças diretas e a comissão da plataforma é enviada em application_fee_amount. Pix depende da habilitação da conta; carteiras dependem também do domínio e dispositivo. Consulte [a ativação](STRIPE.md) e [as tarifas oficiais](https://stripe.com/br/pricing), incluindo as condições de Connect.
+A Stripe Connect é o único provedor real integrado. O organizador cadastra uma conta com painel completo, os pagamentos são cobranças diretas e a comissão da plataforma é enviada em application_fee_amount. Pix depende da habilitação da conta; carteiras dependem também do domínio e dispositivo. Consulte [a ativação](STRIPE.md) e [as tarifas oficiais](https://stripe.com/br/pricing), incluindo as condições de Connect.
 
 A comissão incide sobre o valor dos ingressos e não sobre o lucro contábil do evento. É configurável entre 0 e 20% por organização, descontada do organizador ou acrescentada ao comprador. Percentual vazio bloqueia a venda. O servidor fixa preço, taxa e total no pedido; alterações posteriores valem para novas reservas. Reembolsos são integrais e devolvem também a comissão, sujeitos ao processamento do provedor.
 

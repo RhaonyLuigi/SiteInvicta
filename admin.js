@@ -109,6 +109,7 @@ async function render() {
     const receiving = byId("receiving-actions");
     receiving.replaceChildren();
     if (current.role === "owner") receiving.append(button("Configurar recebimento", async () => {
+        message("Abrindo o cadastro seguro da Stripe…");
         const result = await api("/payments/stripe/onboard", { method: "POST", body: { orgId: current.id } });
         location.assign(result.url);
     }));

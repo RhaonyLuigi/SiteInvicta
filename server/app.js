@@ -154,7 +154,19 @@ export function createApp({ db, config, provider, sendEmail }) {
         const { orgId } = z.object({ orgId: uuid }).parse(req.body);
         await member(db, req.user.id, orgId, ["owner"]);
         requireValue(config.paymentProvider === "stripe", 409, "O recebimento Stripe ainda não está ativado na plataforma.");
-        res.json(await adapter("stripe").onboard(orgId));
+        try {
+            res.json(await adapter("stripe").onboard(orgId, req.user));
+        } catch (error) {
+            if (error.type?.startsWith("Stripe")) {
+                console.error("[Stripe cadastro]", error.type, error.code || "", error.param || "", error.requestId || "");
+                const detail = error.code === "api_key_expired" || error.type === "StripeAuthenticationError"
+                    ? "A chave Stripe da plataforma é inválida ou expirou. Confira as variáveis na Vercel e faça um novo deploy."
+                    : error.type === "StripeConnectionError" ? "Não foi possível acessar a Stripe agora. Tente novamente em alguns instantes."
+                    : "A Stripe não liberou o link de cadastro. Confira a configuração do Connect e as permissões da conta da plataforma. Referência: " + (error.requestId || "indisponível");
+                throw new HttpError(502, detail);
+            }
+            throw error;
+        }
     });
     app.post("/api/payments/stripe/status", authenticated, async (req, res) => {
         const { orgId } = z.object({ orgId: uuid }).parse(req.body);
